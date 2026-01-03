@@ -136,3 +136,29 @@ document.addEventListener("DOMContentLoaded", function () {
         if (e.key === 'Escape') clearDisplay();
     });
 });
+
+function playClickSound() {
+    // 1. Audio Context banayein
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // 2. Agar browser ne block kiya hua hai to usay resume karein
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.type = 'sine'; 
+    oscillator.frequency.setValueAtTime(800, audioCtx.currentTime); // 800Hz thori clear awaz hai
+    
+    // 3. Volume thora tez (0.1 se barha kar 0.2 kar diya)
+    gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.1);
+}
