@@ -86,33 +86,43 @@ function render() {
     // --- APPEND FUNCTION ---
 window.append = function(value) {
     if (justCalculated) {
+        // Agar calculation ke baad operator dabayein to Ans use ho, warna screen saaf ho
         expression = (['+', '-', '*', '/', '**'].includes(value)) ? lastAnswer : "";
         justCalculated = false;
     }
 
     let lastChar = expression.slice(-1);
 
-    // 1. START CHECK: Agar screen khali hai, toh sirf '-' ya number/bracket allow ho
+    // --- REQUIREMENT 2: Decimal (Ishariya) Logic ---
+    if (value === '.') {
+        // Agar expression khali hai ya pichla char operator/bracket hai, to "0." kar do
+        if (expression === "" || /[\+\-\*\/\(\^]/.test(lastChar)) {
+            expression += "0.";
+            render();
+            return;
+        }
+
+        // --- REQUIREMENT 1: Ek number mein doosra dot block karna ---
+        // Piche se check karo ke is current number mein pehle se dot hai ya nahi
+        let parts = expression.split(/[\+\-\*\/\(\)]/); // Equation ko operators se todo
+        let currentNumber = parts[parts.length - 1]; // Akhri hissa uthao
+        if (currentNumber.includes('.')) return; // Agar dot pehle se hai to wapas jao
+    }
+
+    // --- Baqi Purana Logic (Safe) ---
     if (expression === "" && ['+', '*', '/', '**'].includes(value)) return;
-
-    // 2. FIX: Agar start mein sirf '-' hai, toh uske baad koi operator (+, *, /, ^) na aaye
     if (expression === "-" && ['+', '-', '*', '/', '**'].includes(value)) return;
-
-    // 3. BRACKET CHECK: '(' ke foran baad sirf number ya '-' allow ho
     if (lastChar === "(" && ['+', '*', '/', '**'].includes(value)) return;
 
-    // 4. Closing bracket logic
     if (value === ")") {
         let openBCount = (expression.match(/\(/g) || []).length;
         let closeBCount = (expression.match(/\)/g) || []).length;
         if (openBCount <= closeBCount) return; 
-
         while (['+', '-', '*', '/'].includes(expression.slice(-1))) {
             expression = expression.slice(0, -1);
         }
     }
 
-    // 5. Power (^) Logic
     if (value === '**') {
         if (isPowerMode) { exitPower(); return; }
         if (/[0-9)]/.test(lastChar) && expression !== "") {
@@ -123,16 +133,17 @@ window.append = function(value) {
         return;
     }
 
-    // 6. Operator Swap Logic (Lekin bracket ya start-minus ke baad swap block)
+    // Operator Swap Logic
     if (['+', '-', '*', '/'].includes(value) && ['+', '-', '*', '/'].includes(lastChar)) {
         let charBeforeLast = expression.slice(-2, -1);
-        // Agar operator se pehle '(' hai ya screen par sirf operator hi bacha hai
         if (charBeforeLast === "(" || expression.length === 1) return;
         expression = expression.slice(0, -1);
     }
 
     if (expression === "0" && /[0-9]/.test(value)) expression = "";
-    if (value === "(" && /[0-9)]/.test(lastChar)) expression += "*";
+    
+    // Auto-multiply brackets/sqrt
+    if ((value === "(" || value === "Math.sqrt(") && /[0-9)]/.test(lastChar)) expression += "*";
     if (/[0-9]/.test(value) && lastChar === ")") expression += "*";
 
     expression += value;
