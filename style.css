@@ -8,12 +8,15 @@ body {
     margin: 0;
 }
 
+/* Calculator ko mobile par fit karne ke liye */
 .calculator {
-    width: 320px;
+    width: 95%; /* Mobile par side se thodi jagah chorega */
+    max-width: 340px; /* Desktop par size limit */
     background: #1e1e1e;
     padding: 15px;
     border-radius: 15px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-sizing: border-box; /* Padding handling ke liye */
 }
 
 .display {
@@ -31,7 +34,7 @@ body {
 }
 
 .input-line {
-    font-size: 28px;
+    font-size: 30px;
     margin-top: 1px;
     color: #333;
     font-weight: bold;
@@ -65,12 +68,12 @@ body {
 .buttons {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    grid-auto-rows: 55px;
-    gap: 8px;
+    grid-auto-rows: clamp(50px, 15vw, 60px);
+    gap: 10px;
 }
 
 button {
-    font-size: 20px;
+    font-size: clamp(16px, 5vw, 22px);
     cursor: pointer;
     border: none;
     border-radius: 8px;

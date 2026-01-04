@@ -34,7 +34,7 @@ function render() {
     while (i < expression.length) {
         let char = expression[i];
 
-        // Power (**) rendering
+        // Power aur Root ki display logic (Jo pehle set ki thi)
         if (expression.substring(i, i + 3) === "**(") {
             i += 3;
             let powerContent = "";
@@ -49,13 +49,13 @@ function render() {
             continue;
         }
 
-        // Square Root display
         if (expression.substring(i, i + 10) === "Math.sqrt(") {
-       html += `<span style="color:red; font-weight: 900; display: inline-block; transform: scale(1.2, 1.1); text-shadow: 0.5px 0 0 red, -0.5px 0 0 red;">√</span>`;
-            i += 9;
+            html += `<span style="color:red; font-weight: 900; display: inline-block; transform: scale(1.2, 1.1); text-shadow: 0.5px 0 0 red, -0.5px 0 0 red;">√</span>`;
+            i += 10;
             char = "(";
         }
 
+        // Brackets coloring logic
         if (char === "(") {
             let color = bracketColors[stack.length % bracketColors.length];
             stack.push(color);
@@ -71,13 +71,19 @@ function render() {
     }
 
     inputDisplay.innerHTML = html;
-    setTimeout(() => { inputDisplay.scrollLeft = inputDisplay.scrollWidth; }, 0);
+
+    // Mobile Responsive Scroll Fix
+    setTimeout(() => { 
+        inputDisplay.scrollLeft = inputDisplay.scrollWidth; 
+        resultDisplay.scrollLeft = resultDisplay.scrollWidth;
+    }, 50); 
     
-    // --- YAHAN CHANGE HAI ---
+    // Result Display logic
     if (!justCalculated) {
         resultDisplay.style.opacity = "0.5";
-        // Jab aap naya kuch type karein, toh "Close bracket" ya purana error hat jaye
-        resultDisplay.innerText = expression === "" ? "0" : ""; 
+        if (resultDisplay.innerText !== "Error" && resultDisplay.innerText !== "Close bracket") {
+            resultDisplay.innerText = expression === "" ? "0" : ""; 
+        }
     } else {
         resultDisplay.style.opacity = "1";
     }
@@ -96,7 +102,7 @@ window.append = function(value) {
     // --- REQUIREMENT 2: Decimal (Ishariya) Logic ---
     if (value === '.') {
         // Agar expression khali hai ya pichla char operator/bracket hai, to "0." kar do
-        if (expression === "" || /[\+\-\*\/\(\^]/.test(lastChar)) {
+        if (expression === "" || /[\+\-\*\/\(]/.test(lastChar)) {
             expression += "0.";
             render();
             return;
@@ -143,7 +149,13 @@ window.append = function(value) {
     if (expression === "0" && /[0-9]/.test(value)) expression = "";
     
     // Auto-multiply brackets/sqrt
-    if ((value === "(" || value === "Math.sqrt(") && /[0-9)]/.test(lastChar)) expression += "*";
+	if (
+	   (value === "(" || value === "Math.sqrt(") &&
+	   /[0-9)]/.test(lastChar)
+	) {
+	   expression += "*";
+	}
+
     if (/[0-9]/.test(value) && lastChar === ")") expression += "*";
 
     expression += value;
