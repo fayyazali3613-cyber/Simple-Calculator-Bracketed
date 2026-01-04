@@ -13,8 +13,8 @@ body {
     width: 100%; /* Mobile par side se thodi jagah chorega */
     max-width: 360px; /* Desktop par size limit */
     background: #1e1e1e;
-    padding:5px;
-    border-radius: 10px;
+    padding:10px 5px;
+    border-radius: 0px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     box-sizing: border-box; /* Padding handling ke liye */
 }
@@ -23,7 +23,7 @@ body {
     height: 120px;
     background: #ffffff;
     padding: 15px;
-    margin-bottom: 15px;
+    margin-bottom: 7px;
     border-radius: 0px;
     display: flex;
     flex-direction: column;
@@ -77,7 +77,7 @@ button {
     font-size: clamp(18px, 6vw, 24px);
     cursor: pointer;
     border: none;
-    border-radius: 0 px;
+    border-radius: 0px;
     background: #333;
     color: white;
     transition: 0.2s;
