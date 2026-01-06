@@ -83,6 +83,9 @@ button {
     color: white;
     transition: 0.2s;
     box-shadow: 0 3px 0 #111;
+	user-select: none; /* Text select na ho */
+    -webkit-tap-highlight-color: transparent; /* Mobile tap blue box khatam */
+    touch-action: manipulation; /* Zooming prevent karne ke liye */
 }
 
 button:active {

@@ -249,26 +249,38 @@ document.addEventListener("DOMContentLoaded", function () {
     window.useAns = function () { if (lastAnswer) append(lastAnswer); };
 
     // Keyboard support
-    document.addEventListener("keydown", (e) => {
-        if (/[0-9]/.test(e.key)) append(e.key);
-        if (['+', '-', '*', '/'].includes(e.key)) append(e.key);
-        if (e.key === '^') append('**');
-        if (e.key === 'Enter') { e.preventDefault(); isPowerMode ? exitPower() : calculate(); }
-        if (e.key === 'Backspace') backspace();
-        if (e.key === 'Escape') clearDisplay();
-    });
+document.addEventListener("keydown", (e) => {
+    if (/[0-9]/.test(e.key)) append(e.key);
+    if (['+', '-', '*', '/'].includes(e.key)) append(e.key);
+    if (e.key === '^') append('**');
+    if (e.key === 'Enter') { e.preventDefault(); isPowerMode ? exitPower() : calculate(); }
+    if (e.key === 'Backspace') backspace();
+    if (e.key === 'Escape') clearDisplay();
+
+    // Cursor navigation
+    if (e.key === "ArrowLeft") {
+        cursorSpan = Math.max(0, cursorSpan - 1);
+        render();
+    }
+    if (e.key === "ArrowRight") {
+        cursorSpan = Math.min(expression.length, cursorSpan + 1);
+        render();
+    }
+});
+
 
     // Click to Edit Logic
-    inputDisplay.addEventListener("click", (e) => {
-        const chars = inputDisplay.innerText;
-        const rect = inputDisplay.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        
-        // Simple logic to move cursor to end on click 
-        // (Click specific position needs high-level measurement)
-        cursorSpan = expression.length; 
-        render();
-    });
+inputDisplay.addEventListener("click", (e) => {
+    const rect = inputDisplay.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+
+    // Expression length ke hisaab se approximate position
+    const approxPos = Math.round((clickX / rect.width) * expression.length);
+    cursorSpan = Math.max(0, Math.min(expression.length, approxPos));
+
+    render();
+});
+
 
     render(); // Initial render
 });
