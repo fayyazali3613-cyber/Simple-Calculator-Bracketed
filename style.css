@@ -35,7 +35,7 @@ body {
 }
 
 .input-line {
-    font-size: 30px;
+    font-size: 32px;
     margin-top: 1px;
     color: #333;
     font-weight: bold;
@@ -133,3 +133,9 @@ body.light-mode button:nth-child(4n) {
     vertical-align: super;
     color: red; /* Green color for power characters */
 }
+.cursor {
+    border-right: 2px solid #ffcc00;
+    margin-left: -2px;
+    animation: blink 0.8s infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
