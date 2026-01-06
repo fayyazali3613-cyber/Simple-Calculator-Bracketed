@@ -83,9 +83,6 @@ button {
     color: white;
     transition: 0.2s;
     box-shadow: 0 3px 0 #111;
-	user-select: none; /* Text select na ho */
-    -webkit-tap-highlight-color: transparent; /* Mobile tap blue box khatam */
-    touch-action: manipulation; /* Zooming prevent karne ke liye */
 }
 
 button:active {
@@ -136,9 +133,3 @@ body.light-mode button:nth-child(4n) {
     vertical-align: super;
     color: red; /* Green color for power characters */
 }
-.cursor {
-    border-right: 2px solid #ffcc00;
-    margin-left: -2px;
-    animation: blink 0.8s infinite;
-}
-@keyframes blink { 50% { opacity: 0; } }
