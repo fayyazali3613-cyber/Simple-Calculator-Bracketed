@@ -20,6 +20,10 @@ body {
     box-shadow: 0 -5px 30px rgba(0,0,0,0.5); /* Shadow upar ki taraf */
     box-sizing: border-box;
 }
+.input-line:focus {
+    outline: none; /* Default blue border hatane ke liye */
+    background: rgba(255, 255, 255, 0.05); /* Halka sa highlight */
+}
 .display {
     height: 120px;
     background: #ffffff;
@@ -35,7 +39,7 @@ body {
 }
 
 .input-line {
-    font-size: 40px;
+    font-size: 36px;
     margin-top: 1px;
     color: #333;
     font-weight: bold;
