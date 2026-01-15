@@ -33,7 +33,6 @@ document.addEventListener("DOMContentLoaded", function () {
         isManualEditing = true; 
         
         let manualText = inputDisplay.innerText;
-        // FIX: √ ko as it is rahne do, kisi bhi conversion ke baghair
         expression = manualText
             .replace(/×/g, "*")
             .replace(/÷/g, "/");
@@ -114,7 +113,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 continue;
             }
 
-            // Square root - FIX: sirf √ character dikhao
+            // Square root
             if (expression[i] === '√') {
                 html += `<span style="color:red;font-weight:900;transform:scale(1.2,1.1)">√</span>`;
                 i++;
@@ -228,21 +227,17 @@ document.addEventListener("DOMContentLoaded", function () {
     window.append = function (value) {
         isManualEditing = false;
         
-        // FIX: AGAR JUST CALCULATED HAI AUR OPERATOR HAI, TO ANSWER KO EXPRESSION MEIN DAL DO
         if (justCalculated) {
             if (['+', '-', '*', '/', '**'].includes(value)) {
-                // Operator press kiya hai, to answer ko expression mein daal do
                 expression = lastAnswer;
                 cursorPosition = expression.length;
                 justCalculated = false;
                 
-                // Ab operator append karo
                 expression += value;
                 cursorPosition = expression.length;
                 render();
                 return;
-            } else if (!['√'].includes(value)) { // FIX: √ ko include kiya
-                // Agar operator nahi hai, to naye calculation shuru karo
+            } else if (!['√'].includes(value)) {
                 expression = "";
                 cursorPosition = 0;
                 justCalculated = false;
@@ -253,7 +248,6 @@ document.addEventListener("DOMContentLoaded", function () {
         let charBeforeCursor = cursorPosition > 0 ? expression[cursorPosition - 1] : '';
         let lastChar = expression.slice(-1);
 
-        // 1. EXCESS CLOSING BRACKET CHECK
         if (value === ")") {
             let openBrackets = (expression.match(/\(/g) || []).length;
             let closeBrackets = (expression.match(/\)/g) || []).length;
@@ -263,24 +257,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
             
-            // FIX 2: OPERATOR K BAAD BRACKET CLOSE KARNE PAR OPERATOR REMOVE KARO
             if (cursorPosition > 0) {
-                // Check if last character before cursor is an operator
                 if (['+', '-', '*', '/'].includes(charBeforeCursor)) {
-                    // Check if this is right after opening bracket like "(+"
                     if (cursorPosition >= 2) {
                         let twoCharsBefore = expression.slice(cursorPosition - 2, cursorPosition);
                         if (twoCharsBefore === "(+" || twoCharsBefore === "(*" || 
                             twoCharsBefore === "(/" || twoCharsBefore === "(-") {
-                            // Remove the operator and add closing bracket
                             expression = expression.slice(0, cursorPosition - 1) + ")" + expression.slice(cursorPosition);
-                            // cursorPosition remains same because we replaced operator with )
                             render();
                             return;
                         }
                     }
                     
-                    // Check if this operator is at the beginning of expression or after another operator
                     let hasValidContentBefore = false;
                     for (let i = cursorPosition - 2; i >= 0; i--) {
                         if (/[0-9)]/.test(expression[i])) {
@@ -291,9 +279,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                     
                     if (!hasValidContentBefore) {
-                        // Remove the operator and add closing bracket
                         expression = expression.slice(0, cursorPosition - 1) + ")" + expression.slice(cursorPosition);
-                        // cursorPosition remains same
                         render();
                         return;
                     }
@@ -301,18 +287,14 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // 2. FIX 1: BRACKET K START MEIN ONLY MINUS ALLOW, BAQI OPERATORS NAHI
         if (value === '(') {
-            // Nothing special for opening bracket
         } else if (charBeforeCursor === '(') {
-            // After opening bracket, only allow: numbers, minus, sqrt, or another opening bracket
-            if (!/[0-9\-]/.test(value) && value !== '√' && value !== '(') { // FIX: √ ko allow kiya
+            if (!/[0-9\-]/.test(value) && value !== '√' && value !== '(') {
                 showResultMessage("Invalid after (");
                 return;
             }
         }
 
-        // 3. POWER BUTTON HANDLING
         if (value === '**') {
             if (isPowerMode) {
                 exitPower();
@@ -331,15 +313,13 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        // 4. CHECK FOR OPERATOR AFTER POWER MODE EXIT
-        if (isPowerMode && !['0','1','2','3','4','5','6','7','8','9','+','-','*','/','(',')','.','√'].includes(value)) { // FIX: √ ko include kiya
+        if (isPowerMode && !['0','1','2','3','4','5','6','7','8','9','+','-','*','/','(',')','.','√'].includes(value)) {
             if (/[0-9]/.test(value)) {
                 showResultMessage("Enter operator");
                 return;
             }
         }
 
-        // 5. NUMBER AFTER CLOSING BRACKET OR POWER WITHOUT OPERATOR
         if (/[0-9.]/.test(value) && cursorPosition > 0) {
             let charAtPos = expression[cursorPosition - 1];
             if (charAtPos === ')' || (isPowerMode && charBeforeCursor === ')')) {
@@ -348,9 +328,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // 6. FIX: BRACKET K BAAD MINUS LAGANE K BAAD DUSRA OPERATOR NAHI LAGNA CHAHIYE
         if (['+', '*', '/'].includes(value) && cursorPosition > 0) {
-            // Check if we're trying to add operator after (-
             if (cursorPosition >= 2) {
                 let twoCharsBefore = expression.slice(cursorPosition - 2, cursorPosition);
                 if (twoCharsBefore === "(-") {
@@ -360,7 +338,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // Decimal handling
         if (value === '.') {
             let left = cursorPosition - 1;
             while (left >= 0 && /[0-9]/.test(expression[left])) {
@@ -382,16 +359,13 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // Invalid operator at start
         if (cursorPosition === 0 && ['+', '*', '/'].includes(value)) return;
         
-        // Invalid operator after ( (already handled above, but keeping for completeness)
         if (charBeforeCursor === "(" && ['+', '*', '/'].includes(value)) {
             showResultMessage("Invalid after (");
             return;
         }
 
-        // Handle operator replacement
         if (['+', '-', '*', '/'].includes(value) && 
             cursorPosition > 0 && ['+', '-', '*', '/'].includes(charBeforeCursor)) {
             
@@ -405,14 +379,12 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // Handle multiplication insertion before brackets/numbers
-        if ((value === "(" || value === "√") && // FIX: √ ke liye multiplication
+        if ((value === "(" || value === "√") && 
             cursorPosition > 0 && /[0-9)]/.test(charBeforeCursor)) {
             expression = expression.slice(0, cursorPosition) + "*" + expression.slice(cursorPosition);
             cursorPosition++;
         }
 
-        // Insert value at cursor position
         expression = expression.slice(0, cursorPosition) + value + expression.slice(cursorPosition);
         cursorPosition += value.length;
         
@@ -445,7 +417,7 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     /* ===============================
-       SPECIAL FUNCTIONS (FIXED)
+       SPECIAL FUNCTIONS
     =============================== */
     window.appendSqrt = function () {
         inputDisplay.focus();
@@ -462,7 +434,6 @@ document.addEventListener("DOMContentLoaded", function () {
             cursorPosition = expression.length;
         }
 
-        // FIX: sirf √ character insert karo, koi bracket nahi
         expression = expression.slice(0, cursorPosition) + "√" + expression.slice(cursorPosition);
         cursorPosition += 1;
         render();
@@ -489,51 +460,117 @@ document.addEventListener("DOMContentLoaded", function () {
 
         let tempExpr = expression;
 
-        // FIX: √ ko Math.sqrt( mein convert karo calculation ke liye
-        tempExpr = tempExpr.replace(/√/g, "Math.sqrt(");
+        // FIX 1: √ KO PROPERLY CONVERT KARO
+        // Pehle har √ ko properly Math.sqrt() mein convert karo
+        let convertedExpr = "";
+        let i = 0;
         
-        // Count brackets after conversion
-        let openB  = (tempExpr.match(/\(/g) || []).length;
-        let closeB = (tempExpr.match(/\)/g) || []).length;
-
-        // FIX: Agar √ hai to automatically closing brackets add karo
-        if (tempExpr.includes("Math.sqrt(")) {
-            let sqrtCount = (tempExpr.match(/Math\.sqrt\(/g) || []).length;
-            let missingBrackets = openB - closeB;
-            
-            // Agar brackets missing hain to automatically add karo
-            if (missingBrackets > 0) {
-                tempExpr += ")".repeat(missingBrackets);
-                closeB += missingBrackets;
-            }
-            
-            // Extra check: har √ ke liye closing bracket ensure karo
-            for (let i = 0; i < sqrtCount; i++) {
-                let sqrtIndex = tempExpr.indexOf("Math.sqrt(");
-                if (sqrtIndex === -1) break;
+        while (i < tempExpr.length) {
+            if (tempExpr[i] === '√') {
+                convertedExpr += "Math.sqrt(";
+                i++;
                 
-                let afterSqrt = tempExpr.substring(sqrtIndex + 10);
+                // √ ke baad kya hai?
+                if (i < tempExpr.length && tempExpr[i] === '(') {
+                    // √( case - bracket ki depth count karo
+                    let depth = 1;
+                    convertedExpr += "(";
+                    i++;
+                    
+                    while (i < tempExpr.length && depth > 0) {
+                        if (tempExpr[i] === '(') depth++;
+                        if (tempExpr[i] === ')') depth--;
+                        convertedExpr += tempExpr[i];
+                        i++;
+                    }
+                    // Math.sqrt ke liye closing bracket add karo
+                    convertedExpr += ")";
+                } else {
+                    // √ ke baad direct number/expression
+                    // Sab kuch lelo jab tak operator, bracket ya end na aaye
+                    let content = "";
+                    while (i < tempExpr.length && !['+', '-', '*', '/', ')', '√', '^'].includes(tempExpr[i])) {
+                        content += tempExpr[i];
+                        i++;
+                    }
+                    convertedExpr += content + ")";
+                }
+            } else if (tempExpr.substring(i, i + 3) === "**(") {
+                // FIX 2: POWER MODE HANDLING
+                convertedExpr += "**(";
+                i += 3;
                 let depth = 1;
-                let j = 0;
                 
-                while (j < afterSqrt.length && depth > 0) {
-                    if (afterSqrt[j] === "(") depth++;
-                    if (afterSqrt[j] === ")") depth--;
-                    j++;
+                while (i < tempExpr.length && depth > 0) {
+                    if (tempExpr[i] === '(') depth++;
+                    if (tempExpr[i] === ')') depth--;
+                    convertedExpr += tempExpr[i];
+                    i++;
                 }
-                
-                // Agar √ ke baad closing bracket nahi hai to add karo
-                if (depth > 0) {
-                    tempExpr += ")";
-                    closeB++;
-                }
+            } else {
+                convertedExpr += tempExpr[i];
+                i++;
             }
         }
+        
+        tempExpr = convertedExpr;
 
-        // Sirf agar √ nahi hai aur brackets missing hain tab error dikhao
-        if (openB > closeB && !tempExpr.includes("Math.sqrt(")) {
-            showResultMessage("Close bracket");
-            return;
+        // FIX 3: MISSING BRACKETS CHECK AND FIX
+        let openBrackets = (tempExpr.match(/\(/g) || []).length;
+        let closeBrackets = (tempExpr.match(/\)/g) || []).length;
+        
+        // Agar Math.sqrt ke liye brackets missing hain
+        let sqrtCount = (tempExpr.match(/Math\.sqrt\(/g) || []).length;
+        if (sqrtCount > 0) {
+            // Har Math.sqrt ke liye check karo
+            let finalExpr = "";
+            let pos = 0;
+            
+            while (pos < tempExpr.length) {
+                if (tempExpr.substring(pos, pos + 10) === "Math.sqrt(") {
+                    finalExpr += "Math.sqrt(";
+                    pos += 10;
+                    
+                    let depth = 1;
+                    let foundClosing = false;
+                    let tempPos = pos;
+                    
+                    // Closing bracket dhoondo
+                    while (tempPos < tempExpr.length && depth > 0) {
+                        if (tempExpr[tempPos] === '(') depth++;
+                        if (tempExpr[tempPos] === ')') depth--;
+                        tempPos++;
+                    }
+                    
+                    if (depth === 0) {
+                        // Closing bracket mil gayi
+                        while (pos < tempPos) {
+                            finalExpr += tempExpr[pos];
+                            pos++;
+                        }
+                    } else {
+                        // Closing bracket nahi mili, add karo
+                        while (pos < tempExpr.length && !['+', '-', '*', '/', ')'].includes(tempExpr[pos])) {
+                            finalExpr += tempExpr[pos];
+                            pos++;
+                        }
+                        finalExpr += ")";
+                    }
+                } else {
+                    finalExpr += tempExpr[pos];
+                    pos++;
+                }
+            }
+            
+            tempExpr = finalExpr;
+        }
+
+        // General brackets check
+        openBrackets = (tempExpr.match(/\(/g) || []).length;
+        closeBrackets = (tempExpr.match(/\)/g) || []).length;
+        
+        if (openBrackets > closeBrackets) {
+            tempExpr += ")".repeat(openBrackets - closeBrackets);
         }
 
         // Remove trailing operators
@@ -542,6 +579,34 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         try {
+            // FIX 4: FINAL VALIDATION
+            // Ensure all Math.sqrt have closing brackets
+            let testExpr = tempExpr;
+            let sqrtMatches = testExpr.match(/Math\.sqrt\(/g);
+            if (sqrtMatches) {
+                for (let j = 0; j < sqrtMatches.length; j++) {
+                    let sqrtIndex = testExpr.indexOf("Math.sqrt(");
+                    if (sqrtIndex === -1) break;
+                    
+                    let afterSqrt = testExpr.substring(sqrtIndex + 10);
+                    let depth = 1;
+                    let k = 0;
+                    
+                    while (k < afterSqrt.length && depth > 0) {
+                        if (afterSqrt[k] === '(') depth++;
+                        if (afterSqrt[k] === ')') depth--;
+                        k++;
+                    }
+                    
+                    if (depth > 0) {
+                        // Missing closing bracket, add it
+                        testExpr += ")";
+                    }
+                }
+            }
+            
+            tempExpr = testExpr;
+            
             let result = eval(tempExpr);
             if (!Number.isInteger(result)) {
                 result = Math.round(result * 100000000) / 100000000;
@@ -556,7 +621,7 @@ document.addEventListener("DOMContentLoaded", function () {
             render();
 
         } catch (error) {
-            console.error("Calculation error:", error);
+            console.error("Calculation error:", error, "Expression:", tempExpr);
             resultDisplay.innerText = "Error";
             resultDisplay.style.opacity = "1";
             justCalculated = false;
@@ -598,7 +663,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 isPowerMode = false;
                 powerStartIndex = -1;
             }
-        } else if (cursorPosition > 0 && expression[cursorPosition - 1] === '√') { // FIX: √ delete karne ke liye
+        } else if (cursorPosition > 0 && expression[cursorPosition - 1] === '√') {
             expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
             cursorPosition--;
         } else if (cursorPosition > 0) {
@@ -643,7 +708,6 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        // External keyboard input
         if (/[0-9]/.test(e.key)) window.append(e.key);
         if (['+', '-', '*', '/'].includes(e.key)) window.append(e.key);
         if (e.key === '^') window.append('**');
@@ -657,6 +721,5 @@ document.addEventListener("DOMContentLoaded", function () {
         if (e.key === 'Escape') clearDisplay();
     });
 
-    // Initial render
     render();
 });
