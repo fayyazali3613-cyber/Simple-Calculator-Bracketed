@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let isManualEditing = false;
     let cursorPosition = 0;
     let powerStartIndex = -1;
+	let powerSectionEnd = -1;  // Track where power section should end
 
     /* ===============================
        EDITABLE INPUT LOGIC
@@ -68,8 +69,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    /* ===============================
-       RENDER FUNCTION
+     /* ===============================
+       RENDER FUNCTION - FIXED
     =============================== */
     function render() {
         if (isManualEditing) {
@@ -86,35 +87,52 @@ document.addEventListener("DOMContentLoaded", function () {
         while (i < expression.length) {
             let char = expression[i];
 
-            // Power mode start
-            if (!inPowerSection && expression.substring(i, i + 3) === "**(") {
+            // Power mode start - IMPROVED
+            if (!inPowerSection && expression.substring(i, i + 2) === "**") {
                 inPowerSection = true;
-                powerDepth = 1;
+                powerDepth = 0;
                 
                 html += `<span style="color:red; font-size:0.8em; vertical-align:super;">^</span>`;
                 
-                i += 3;
-                continue;
-            }
-
-            // Handle power content
-            if (inPowerSection) {
-                if (expression[i] === "(") powerDepth++;
-                if (expression[i] === ")") {
-                    powerDepth--;
-                    if (powerDepth === 0) {
-                        inPowerSection = false;
-                        i++;
-                        continue;
-                    }
-                }
+                i += 2;
                 
-                html += `<span style="color:red;">${expression[i]}</span>`;
-                i++;
+                // Check if there's a bracket after **
+                if (i < expression.length && expression[i] === '(') {
+                    html += `<span style="color:red;">(</span>`;
+                    powerDepth = 1;
+                    i++;
+                }
                 continue;
             }
 
-            // Square root - FIX: sirf √ character dikhao
+            // Handle power content - FIXED: Only until operator
+            if (inPowerSection) {
+                // Check if we should exit power section
+                if (powerDepth === 0 && /[\+\-\*\/]/.test(expression[i]) && i > 0) {
+                    inPowerSection = false;
+                    // Process this character normally
+                } else {
+                    if (expression[i] === "(") {
+                        powerDepth++;
+                        html += `<span style="color:red;">(</span>`;
+                    }
+                    else if (expression[i] === ")") {
+                        powerDepth--;
+                        html += `<span style="color:red;">)</span>`;
+                        if (powerDepth === 0) {
+                            i++;
+                            continue;
+                        }
+                    }
+                    else {
+                        html += `<span style="color:red;">${expression[i]}</span>`;
+                    }
+                    i++;
+                    continue;
+                }
+            }
+
+            // Square root
             if (expression[i] === '√') {
                 html += `<span style="color:red;font-weight:900;transform:scale(1.2,1.1)">√</span>`;
                 i++;
@@ -132,10 +150,23 @@ document.addEventListener("DOMContentLoaded", function () {
                 html += `<span style="color:${color}">)</span>`;
             }
             else {
-                let displayChar =
-                    char === "*" ? "×" :
-                    char === "/" ? "÷" :
-                    char;
+                // FIX: Don't convert * to × if it's part of **
+                let displayChar;
+                if (char === "*") {
+                    // Check if this is part of ** (even if not in power section now)
+                    if (i + 1 < expression.length && expression[i + 1] === "*") {
+                        // It's part of ** - skip both stars
+                        i += 2; // Skip both * characters
+                        continue; // Move to next iteration
+                    } else {
+                        // It's a single * (multiplication operator)
+                        displayChar = "×";
+                    }
+                } else if (char === "/") {
+                    displayChar = "÷";
+                } else {
+                    displayChar = char;
+                }
 
                 html += `<span class="char">${displayChar}</span>`;
             }
@@ -312,32 +343,71 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // 3. POWER BUTTON HANDLING
+        // 3. POWER BUTTON HANDLING - FIXED
         if (value === '**') {
             if (isPowerMode) {
-                exitPower();
+                // If already in power mode, exit it
+                isPowerMode = false;
+                powerStartIndex = -1;
+                render();
                 return;
             }
             
             if (cursorPosition === 0) return;
+            
+            // Check if cursor is between two numbers (like in "25")
+            let leftNum = '';
+            let i = cursorPosition - 1;
+            while (i >= 0 && /[0-9]/.test(expression[i])) {
+                leftNum = expression[i] + leftNum;
+                i--;
+            }
+            
+            let rightNum = '';
+            let j = cursorPosition;
+            while (j < expression.length && /[0-9]/.test(expression[j])) {
+                rightNum += expression[j];
+                j++;
+            }
+            
+            // If we're between numbers, split them
+            if (leftNum !== '' && rightNum !== '') {
+                // Keep the right number for power value
+                // Just insert ** between left and right numbers
+                expression = expression.slice(0, cursorPosition) + "**" + expression.slice(cursorPosition);
+                cursorPosition += 2;
+                isPowerMode = true;
+                powerStartIndex = cursorPosition - 2;
+                render();
+                return;
+            }
             if (!/[0-9)]/.test(charBeforeCursor)) return;
             
+            // Start power mode
             isPowerMode = true;
             powerStartIndex = cursorPosition;
             
-            expression = expression.slice(0, cursorPosition) + "**(" + expression.slice(cursorPosition);
-            cursorPosition += 3;
+            // Add ** at cursor position (WITHOUT AUTO BRACKET)
+            expression = expression.slice(0, cursorPosition) + "**" + expression.slice(cursorPosition);
+            cursorPosition += 2;
+            
             render();
             return;
         }
 
-        // 4. CHECK FOR OPERATOR AFTER POWER MODE EXIT
-        if (isPowerMode && !['0','1','2','3','4','5','6','7','8','9','+','-','*','/','(',')','.','√'].includes(value)) { // FIX: √ ko include kiya
-            if (/[0-9]/.test(value)) {
-                showResultMessage("Enter operator");
-                return;
-            }
+        // 4. IF IN POWER MODE AND USER PRESSES OPERATOR, EXIT POWER MODE
+        if (isPowerMode && ['+', '-', '*', '/'].includes(value)) {
+            // Exit power mode first
+            isPowerMode = false;
+            powerStartIndex = -1;
+            
+            // Then add the operator
+            expression = expression.slice(0, cursorPosition) + value + expression.slice(cursorPosition);
+            cursorPosition += value.length;
+            render();
+            return;
         }
+
 
         // 5. NUMBER AFTER CLOSING BRACKET OR POWER WITHOUT OPERATOR
         if (/[0-9.]/.test(value) && cursorPosition > 0) {
@@ -405,14 +475,17 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        // Handle multiplication insertion before brackets/numbers
-        if ((value === "(" || value === "√") && // FIX: √ ke liye multiplication
+        // Handle multiplication insertion before brackets/numbers - FIXED
+        if ((value === "(" || value === "√") &&
             cursorPosition > 0 && /[0-9)]/.test(charBeforeCursor)) {
-            expression = expression.slice(0, cursorPosition) + "*" + expression.slice(cursorPosition);
-            cursorPosition++;
+            // Only add * if we're NOT inserting √ in power mode
+            if (!(value === "√" && isPowerMode)) {
+                expression = expression.slice(0, cursorPosition) + "*" + expression.slice(cursorPosition);
+                cursorPosition++;
+            }
         }
 
-        // Insert value at cursor position
+        // Infsert value at cursor position
         expression = expression.slice(0, cursorPosition) + value + expression.slice(cursorPosition);
         cursorPosition += value.length;
         
@@ -424,20 +497,6 @@ document.addEventListener("DOMContentLoaded", function () {
     =============================== */
     window.exitPower = function () {
         if (!isPowerMode) return;
-
-        let tempPos = powerStartIndex + 3;
-        let depth = 1;
-        
-        while (tempPos < expression.length && depth > 0) {
-            if (expression[tempPos] === "(") depth++;
-            if (expression[tempPos] === ")") depth--;
-            tempPos++;
-        }
-        
-        if (depth > 0) {
-            expression += ")";
-            cursorPosition = expression.length;
-        }
         
         isPowerMode = false;
         powerStartIndex = -1;
@@ -481,7 +540,7 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     /* ===============================
-       CALCULATE FUNCTION (COMPLETELY FIXED)
+       CALCULATE FUNCTION - FIXED FOR SQUARE ROOT
     =============================== */
     window.calculate = function () {
         if (expression === "") return;
@@ -489,51 +548,50 @@ document.addEventListener("DOMContentLoaded", function () {
 
         let tempExpr = expression;
 
-        // FIX: √ ko Math.sqrt( mein convert karo calculation ke liye
-        tempExpr = tempExpr.replace(/√/g, "Math.sqrt(");
-        
-        // Count brackets after conversion
-        let openB  = (tempExpr.match(/\(/g) || []).length;
-        let closeB = (tempExpr.match(/\)/g) || []).length;
-
-        // FIX: Agar √ hai to automatically closing brackets add karo
-        if (tempExpr.includes("Math.sqrt(")) {
-            let sqrtCount = (tempExpr.match(/Math\.sqrt\(/g) || []).length;
-            let missingBrackets = openB - closeB;
-            
-            // Agar brackets missing hain to automatically add karo
-            if (missingBrackets > 0) {
-                tempExpr += ")".repeat(missingBrackets);
-                closeB += missingBrackets;
-            }
-            
-            // Extra check: har √ ke liye closing bracket ensure karo
-            for (let i = 0; i < sqrtCount; i++) {
-                let sqrtIndex = tempExpr.indexOf("Math.sqrt(");
-                if (sqrtIndex === -1) break;
+        // FIX FOR SQUARE ROOT: √ ke baad sirf immediate number/expression
+        let i = 0;
+        while (i < tempExpr.length) {
+            if (tempExpr[i] === '√') {
+                // Replace √ with Math.sqrt(
+                tempExpr = tempExpr.slice(0, i) + "Math.sqrt(" + tempExpr.slice(i + 1);
+                i += 10; // Move past "Math.sqrt("
                 
-                let afterSqrt = tempExpr.substring(sqrtIndex + 10);
-                let depth = 1;
-                let j = 0;
+                // Find where to put closing bracket
+                let j = i;
+                let bracketDepth = 0;
                 
-                while (j < afterSqrt.length && depth > 0) {
-                    if (afterSqrt[j] === "(") depth++;
-                    if (afterSqrt[j] === ")") depth--;
+                while (j < tempExpr.length) {
+                    if (tempExpr[j] === '(') bracketDepth++;
+                    else if (tempExpr[j] === ')') {
+                        if (bracketDepth === 0) break;
+                        bracketDepth--;
+                    }
+                    else if (bracketDepth === 0 && /[\+\-\*\/]/.test(tempExpr[j])) {
+                        // Found operator, put closing bracket before it
+                        break;
+                    }
                     j++;
                 }
                 
-                // Agar √ ke baad closing bracket nahi hai to add karo
-                if (depth > 0) {
-                    tempExpr += ")";
-                    closeB++;
-                }
+                // Insert closing bracket
+                tempExpr = tempExpr.slice(0, j) + ")" + tempExpr.slice(j);
             }
+            i++;
         }
 
-        // Sirf agar √ nahi hai aur brackets missing hain tab error dikhao
-        if (openB > closeB && !tempExpr.includes("Math.sqrt(")) {
-            showResultMessage("Close bracket");
-            return;
+        // Count brackets - ORIGINAL LOGIC RESTORED
+        let openB  = (tempExpr.match(/\(/g) || []).length;
+        let closeB = (tempExpr.match(/\)/g) || []).length;
+        
+        // Agar brackets missing hain to notification show karo
+        if (openB > closeB) {
+            // Sirf agar √ nahi hai aur brackets missing hain tab error dikhao
+            if (!tempExpr.includes("Math.sqrt(")) {
+                showResultMessage("Close bracket");
+                return;
+            }
+            // √ hai to automatically closing brackets add karo
+            tempExpr += ")".repeat(openB - closeB);
         }
 
         // Remove trailing operators
@@ -553,6 +611,7 @@ document.addEventListener("DOMContentLoaded", function () {
             
             cursorPosition = expression.length;
             isPowerMode = false;
+            powerStartIndex = -1;
             render();
 
         } catch (error) {
@@ -562,7 +621,7 @@ document.addEventListener("DOMContentLoaded", function () {
             justCalculated = false;
         }
     };
-
+	
     /* ===============================
        CLEAR & BACKSPACE
     =============================== */
@@ -575,35 +634,25 @@ document.addEventListener("DOMContentLoaded", function () {
             justCalculated = false;
             isPowerMode = false;
             powerStartIndex = -1;
-        } else if (isPowerMode) {
-            if (cursorPosition >= powerStartIndex + 3) {
+        } else if (cursorPosition > 0) {
+            // Check if deleting power operator
+            if (cursorPosition >= 2 && expression.substring(cursorPosition - 2, cursorPosition) === "**") {
+                expression = expression.slice(0, cursorPosition - 2) + expression.slice(cursorPosition);
+                cursorPosition -= 2;
+                isPowerMode = false;
+                powerStartIndex = -1;
+            } else if (expression[cursorPosition - 1] === '√') {
                 expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
                 cursorPosition--;
-                
-                let tempPos = powerStartIndex + 3;
-                let depth = 1;
-                while (tempPos < expression.length && depth > 0) {
-                    if (expression[tempPos] === "(") depth++;
-                    if (expression[tempPos] === ")") depth--;
-                    tempPos++;
-                }
-                
-                if (depth === 0) {
+            } else {
+                expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
+                cursorPosition--;
+                // Reset power mode if we deleted something inside it
+                if (isPowerMode && cursorPosition < powerStartIndex) {
                     isPowerMode = false;
                     powerStartIndex = -1;
                 }
-            } else {
-                expression = expression.slice(0, powerStartIndex) + expression.slice(powerStartIndex + 3);
-                cursorPosition = powerStartIndex;
-                isPowerMode = false;
-                powerStartIndex = -1;
             }
-        } else if (cursorPosition > 0 && expression[cursorPosition - 1] === '√') { // FIX: √ delete karne ke liye
-            expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
-            cursorPosition--;
-        } else if (cursorPosition > 0) {
-            expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
-            cursorPosition--;
         }
         render();
     };
