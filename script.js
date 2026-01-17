@@ -492,7 +492,7 @@ document.addEventListener("DOMContentLoaded", function () {
         render();
     };
 
-    /* ===============================
+       /* ===============================
        POWER MODE EXIT
     =============================== */
     window.exitPower = function () {
@@ -500,6 +500,21 @@ document.addEventListener("DOMContentLoaded", function () {
         
         isPowerMode = false;
         powerStartIndex = -1;
+        
+        // Fix cursor position after exiting power mode
+        // Ensure cursor is at the end of the power section
+        if (expression.includes("**")) {
+            let lastPowerPos = expression.lastIndexOf("**");
+            if (lastPowerPos !== -1) {
+                // Find end of power section
+                let endPos = lastPowerPos + 2;
+                while (endPos < expression.length && !/[\+\-\*\/]/.test(expression[endPos])) {
+                    endPos++;
+                }
+                cursorPosition = endPos;
+            }
+        }
+        
         render();
     };
 
@@ -539,7 +554,7 @@ document.addEventListener("DOMContentLoaded", function () {
         document.body.classList.toggle("light-mode");
     };
 
-    /* ===============================
+      /* ===============================
        CALCULATE FUNCTION - FIXED FOR SQUARE ROOT
     =============================== */
     window.calculate = function () {
@@ -548,35 +563,42 @@ document.addEventListener("DOMContentLoaded", function () {
 
         let tempExpr = expression;
 
-        // FIX FOR SQUARE ROOT: √ ke baad sirf immediate number/expression
-        let i = 0;
-        while (i < tempExpr.length) {
-            if (tempExpr[i] === '√') {
-                // Replace √ with Math.sqrt(
-                tempExpr = tempExpr.slice(0, i) + "Math.sqrt(" + tempExpr.slice(i + 1);
-                i += 10; // Move past "Math.sqrt("
-                
-                // Find where to put closing bracket
-                let j = i;
-                let bracketDepth = 0;
-                
-                while (j < tempExpr.length) {
-                    if (tempExpr[j] === '(') bracketDepth++;
-                    else if (tempExpr[j] === ')') {
-                        if (bracketDepth === 0) break;
-                        bracketDepth--;
-                    }
-                    else if (bracketDepth === 0 && /[\+\-\*\/]/.test(tempExpr[j])) {
-                        // Found operator, put closing bracket before it
-                        break;
-                    }
-                    j++;
+        // FIX FOR SQUARE ROOT: Handle nested square roots
+        // First, count all √ characters
+        let sqrtCount = 0;
+        for (let char of tempExpr) {
+            if (char === '√') sqrtCount++;
+        }
+        
+        // Replace each √ with Math.sqrt(
+        for (let s = 0; s < sqrtCount; s++) {
+            tempExpr = tempExpr.replace('√', 'Math.sqrt(');
+        }
+        
+        // Add closing brackets for all Math.sqrt(
+        for (let s = 0; s < sqrtCount; s++) {
+            // Find the position of Math.sqrt(
+            let sqrtPos = tempExpr.indexOf('Math.sqrt(');
+            if (sqrtPos === -1) break;
+            
+            // Find where to put closing bracket
+            let j = sqrtPos + 10; // After "Math.sqrt("
+            let bracketDepth = 0;
+            
+            while (j < tempExpr.length) {
+                if (tempExpr[j] === '(') bracketDepth++;
+                else if (tempExpr[j] === ')') {
+                    if (bracketDepth === 0) break;
+                    bracketDepth--;
                 }
-                
-                // Insert closing bracket
-                tempExpr = tempExpr.slice(0, j) + ")" + tempExpr.slice(j);
+                else if (bracketDepth === 0 && /[\+\-\*\/]/.test(tempExpr[j])) {
+                    break;
+                }
+                j++;
             }
-            i++;
+            
+            // Insert closing bracket
+            tempExpr = tempExpr.slice(0, j) + ")" + tempExpr.slice(j);
         }
 
         // Count brackets - ORIGINAL LOGIC RESTORED
@@ -629,14 +651,29 @@ document.addEventListener("DOMContentLoaded", function () {
         inputDisplay.focus();
         
         if (justCalculated) {
-            expression = "";
-            cursorPosition = 0;
+            // Instead of clearing everything, just exit calculation mode
+            // and allow editing the expression
             justCalculated = false;
-            isPowerMode = false;
-            powerStartIndex = -1;
-        } else if (cursorPosition > 0) {
+            resultDisplay.style.opacity = "0.5";
+            resultDisplay.innerText = "";
+            
+            // Keep the expression for editing
+            cursorPosition = expression.length;
+            render();
+            return;
+        }
+        
+        if (cursorPosition > 0) {
+            // Check if we're trying to delete power value (number after **)
+            if (cursorPosition >= 3 && 
+                expression.substring(cursorPosition - 3, cursorPosition - 1) === "**") {
+                // User is trying to delete power value, not power operator
+                // Just delete one character normally
+                expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
+                cursorPosition--;
+            } 
             // Check if deleting power operator
-            if (cursorPosition >= 2 && expression.substring(cursorPosition - 2, cursorPosition) === "**") {
+            else if (cursorPosition >= 2 && expression.substring(cursorPosition - 2, cursorPosition) === "**") {
                 expression = expression.slice(0, cursorPosition - 2) + expression.slice(cursorPosition);
                 cursorPosition -= 2;
                 isPowerMode = false;
