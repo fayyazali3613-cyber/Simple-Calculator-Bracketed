@@ -1,5 +1,12 @@
-document.addEventListener("DOMContentLoaded", function () {
+<script>
+	function haptic() {
+    if (navigator.vibrate) {
+        navigator.vibrate(40);
+    }
+}
+</script>
 
+document.addEventListener("DOMContentLoaded", function () {
     /* ===============================
        DOM ELEMENTS & CONSTANTS
     =============================== */
