@@ -647,7 +647,9 @@ document.addEventListener("DOMContentLoaded", function () {
     /* ===============================
        CLEAR & BACKSPACE
     =============================== */
-    window.backspace = function () {
+    window.backspace = function (e) {
+        if (e) e.preventDefault(); // Prevent default browser behavior
+        
         inputDisplay.focus();
         
         if (justCalculated) {
