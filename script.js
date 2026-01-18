@@ -203,22 +203,58 @@ document.addEventListener("DOMContentLoaded", function () {
        HELPER FUNCTIONS
     =============================== */
     function setCursorPosition(pos) {
-        const textNodes = getTextNodes(inputDisplay);
-        let charCount = 0;
+        const selection = window.getSelection();
+        selection.removeAllRanges();
         
-        for (const node of textNodes) {
-            if (charCount + node.textContent.length >= pos) {
-                const range = document.createRange();
-                const selection = window.getSelection();
-                range.setStart(node, Math.min(pos - charCount, node.textContent.length));
-                range.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(range);
-                inputDisplay.focus();
+        if (pos === 0) {
+            const range = document.createRange();
+            range.setStart(inputDisplay, 0);
+            range.collapse(true);
+            selection.addRange(range);
+            inputDisplay.focus();
+            return;
+        }
+        
+        // Improved method to handle spans and text nodes
+        const walker = document.createTreeWalker(
+            inputDisplay,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
+        
+        let charCount = 0;
+        let targetNode = null;
+        let targetOffset = 0;
+        let found = false;
+        
+        let node;
+        while (node = walker.nextNode()) {
+            const textLength = node.textContent.length;
+            
+            if (charCount + textLength >= pos) {
+                targetNode = node;
+                targetOffset = pos - charCount;
+                found = true;
                 break;
             }
-            charCount += node.textContent.length;
+            charCount += textLength;
         }
+        
+        if (found && targetNode) {
+            const range = document.createRange();
+            range.setStart(targetNode, Math.min(targetOffset, targetNode.textContent.length));
+            range.collapse(true);
+            selection.addRange(range);
+        } else {
+            // Fallback: set cursor at end
+            const range = document.createRange();
+            range.selectNodeContents(inputDisplay);
+            range.collapse(false);
+            selection.addRange(range);
+        }
+        
+        inputDisplay.focus();
     }
 
     function getTextNodes(element) {
@@ -648,51 +684,55 @@ document.addEventListener("DOMContentLoaded", function () {
        CLEAR & BACKSPACE
     =============================== */
     window.backspace = function (e) {
-        if (e) e.preventDefault(); // Prevent default browser behavior
+        if (e) e.preventDefault();
         
         inputDisplay.focus();
         
         if (justCalculated) {
-            // Instead of clearing everything, just exit calculation mode
-            // and allow editing the expression
             justCalculated = false;
             resultDisplay.style.opacity = "0.5";
             resultDisplay.innerText = "";
-            
-            // Keep the expression for editing
             cursorPosition = expression.length;
             render();
             return;
         }
         
         if (cursorPosition > 0) {
-            // Check if we're trying to delete power value (number after **)
-            if (cursorPosition >= 3 && 
-                expression.substring(cursorPosition - 3, cursorPosition - 1) === "**") {
-                // User is trying to delete power value, not power operator
-                // Just delete one character normally
-                expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
-                cursorPosition--;
-            } 
-            // Check if deleting power operator
-            else if (cursorPosition >= 2 && expression.substring(cursorPosition - 2, cursorPosition) === "**") {
+            // Check if deleting ** operator
+            if (cursorPosition >= 2 && expression.substring(cursorPosition - 2, cursorPosition) === "**") {
                 expression = expression.slice(0, cursorPosition - 2) + expression.slice(cursorPosition);
                 cursorPosition -= 2;
                 isPowerMode = false;
                 powerStartIndex = -1;
-            } else if (expression[cursorPosition - 1] === '√') {
+            } 
+            else if (expression[cursorPosition - 1] === '√') {
                 expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
                 cursorPosition--;
-            } else {
+            }
+            else {
+                // Check if we're deleting from inside power section
+                let deletingFromPowerSection = false;
+                if (isPowerMode && cursorPosition > powerStartIndex) {
+                    deletingFromPowerSection = true;
+                }
+                
                 expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
                 cursorPosition--;
-                // Reset power mode if we deleted something inside it
-                if (isPowerMode && cursorPosition < powerStartIndex) {
+                
+                // Check if we deleted the entire power section
+                if (deletingFromPowerSection && cursorPosition <= powerStartIndex) {
+                    isPowerMode = false;
+                    powerStartIndex = -1;
+                }
+                
+                // Check if we're still in power mode but ** is gone
+                if (isPowerMode && !expression.includes("**")) {
                     isPowerMode = false;
                     powerStartIndex = -1;
                 }
             }
         }
+        
         render();
     };
 
