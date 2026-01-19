@@ -15,6 +15,15 @@ document.addEventListener("DOMContentLoaded", function () {
         "#f1c40f"
     ];
 
+
+    // ADD THIS - ONLY FOR BASIC OPERATORS
+    const operatorColors = {
+        '+': '#2196F3', // Blue
+        '-': '#2196F3', // Blue
+        '×': '#FF9800', // Orange
+        '÷': '#FF9800', // Orange
+    };
+
     /* ===============================
        STATE VARIABLES
     =============================== */
@@ -30,9 +39,7 @@ document.addEventListener("DOMContentLoaded", function () {
     /* ===============================
        EDITABLE INPUT LOGIC
     =============================== */
-    /* ===============================
-   EDITABLE INPUT LOGIC
-=============================== */
+
         inputDisplay.addEventListener("input", function () {
             isManualEditing = true; 
             
@@ -73,16 +80,12 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-     /* ===============================
-       RENDER FUNCTION - FIXED
-    =============================== */
+
     /* ===============================
-   RENDER FUNCTION - FIXED WITH COMMA FORMATTING
-=============================== */
-        /* ===============================
-   RENDER FUNCTION - FIXED WITH COMMA FORMATTING AND POWER COLOR
-=============================== */
-function render() {
+        RENDER FUNCTION - FIXED WITH COMMA FORMATTING AND POWER COLOR
+        =============================== */
+
+        function render() {
     if (isManualEditing) {
         isManualEditing = false;
         return;
@@ -221,6 +224,7 @@ function render() {
         else {
             // FIX: Don't convert * to × if it's part of **
             let displayChar;
+            
             if (char === "*") {
                 // Check if this is part of ** (even if not in power section now)
                 if (i + 1 < expression.length && expression[i + 1] === "*") {
@@ -237,7 +241,15 @@ function render() {
                 displayChar = char;
             }
 
-            html += `<span class="char">${displayChar}</span>`;
+            // CHECK FOR OPERATOR COLORS
+            const specialColor = operatorColors[displayChar];
+            if (specialColor) {
+                // Apply color for +, -, ×, ÷ operators
+                html += `<span style="color:${specialColor}">${displayChar}</span>`;
+            } else {
+                // Default display for everything else
+                html += `<span class="char">${displayChar}</span>`;
+            }
         }
 
         i++;
@@ -304,9 +316,7 @@ function render() {
     /* ===============================
        HELPER FUNCTIONS
     =============================== */
-/* ===============================
-   HELPER FUNCTIONS
-=============================== */
+
         function setCursorPosition(pos) {
             const textNodes = getTextNodes(inputDisplay);
             let charCount = 0;
