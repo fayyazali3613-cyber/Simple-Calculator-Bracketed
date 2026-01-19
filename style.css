@@ -58,7 +58,7 @@ body {
 }
 
 .result-line {
-    font-size: 36px;
+    font-size: 40px;
     font-weight: bold;
     color: #555;
     overflow-x: auto;
@@ -136,4 +136,23 @@ body.light-mode button:nth-child(4n) {
     font-size: 0.65em;
     vertical-align: super;
     color: red; /* Green color for power characters */
+}
+
+/* Power character styling */
+.power-char {
+    color: red !important;
+    font-size: 0.8em;
+    vertical-align: super;
+}
+
+/* Power content (numbers after ^) */
+.power-content {
+    color: red; !important; /* Normal black color for numbers after ^ */
+    font-size: 1em;
+    vertical-align: baseline;
+}
+
+/* Style for numbers with commas */
+.number-with-commas {
+    letter-spacing: 0.2px;
 }

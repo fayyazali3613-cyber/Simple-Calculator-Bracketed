@@ -30,28 +30,32 @@ document.addEventListener("DOMContentLoaded", function () {
     /* ===============================
        EDITABLE INPUT LOGIC
     =============================== */
-    inputDisplay.addEventListener("input", function () {
-        isManualEditing = true; 
-        
-        let manualText = inputDisplay.innerText;
-        // FIX: √ ko as it is rahne do, kisi bhi conversion ke baghair
-        expression = manualText
-            .replace(/×/g, "*")
-            .replace(/÷/g, "/");
+    /* ===============================
+   EDITABLE INPUT LOGIC
+=============================== */
+        inputDisplay.addEventListener("input", function () {
+            isManualEditing = true; 
+            
+            let manualText = inputDisplay.innerText;
+            // Remove commas and convert display characters back to expression format
+            expression = manualText
+                .replace(/,/g, '') // Remove commas first
+                .replace(/×/g, "*")
+                .replace(/÷/g, "/");
 
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            const preCaretRange = range.cloneRange();
-            preCaretRange.selectNodeContents(inputDisplay);
-            preCaretRange.setEnd(range.endContainer, range.endOffset);
-            cursorPosition = preCaretRange.toString().length;
-        }
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const preCaretRange = range.cloneRange();
+                preCaretRange.selectNodeContents(inputDisplay);
+                preCaretRange.setEnd(range.endContainer, range.endOffset);
+                cursorPosition = preCaretRange.toString().length;
+            }
 
-        if (expression === "") {
-            resultDisplay.innerText = "0";
-        }
-    });
+            if (expression === "") {
+                resultDisplay.innerText = "0";
+            }
+        });
 
     inputDisplay.addEventListener("click", function () {
         const selection = window.getSelection();
@@ -72,190 +76,408 @@ document.addEventListener("DOMContentLoaded", function () {
      /* ===============================
        RENDER FUNCTION - FIXED
     =============================== */
-    function render() {
-        if (isManualEditing) {
-            isManualEditing = false;
-            return;
+    /* ===============================
+   RENDER FUNCTION - FIXED WITH COMMA FORMATTING
+=============================== */
+        /* ===============================
+   RENDER FUNCTION - FIXED WITH COMMA FORMATTING AND POWER COLOR
+=============================== */
+function render() {
+    if (isManualEditing) {
+        isManualEditing = false;
+        return;
+    }
+
+    // Store current scroll position before rendering
+    const previousScrollLeft = inputDisplay.scrollLeft;
+    const wasScrolledToEnd = Math.abs(inputDisplay.scrollLeft - (inputDisplay.scrollWidth - inputDisplay.clientWidth)) < 10;
+
+    let html = "";
+    let stack = [];
+    let i = 0;
+    let inPowerSection = false;
+    let powerDepth = 0;
+    let currentNumber = ""; // To accumulate number characters
+    let inNumber = false; // Track if we're inside a number
+
+    while (i < expression.length) {
+        let char = expression[i];
+
+        // Check if character is part of a number
+        const isDigitOrDecimal = /[0-9.]/.test(char);
+        
+        // Power mode start - IMPROVED
+        if (!inPowerSection && expression.substring(i, i + 2) === "**") {
+            // If we were in a number, format it before handling power
+            if (inNumber && currentNumber !== "") {
+                html += `<span class="char">${formatNumberWithCommas(currentNumber)}</span>`;
+                currentNumber = "";
+                inNumber = false;
+            }
+            
+            inPowerSection = true;
+            powerDepth = 0;
+            
+            html += `<span style="color:red; font-size:0.8em; vertical-align:super;">^</span>`;
+            
+            i += 2;
+            
+            // Check if there's a bracket after **
+            if (i < expression.length && expression[i] === '(') {
+                html += `<span style="color:red;">(</span>`;
+                powerDepth = 1;
+                i++;
+            }
+            continue;
         }
 
-        let html = "";
-        let stack = [];
-        let i = 0;
-        let inPowerSection = false;
-        let powerDepth = 0;
-
-        while (i < expression.length) {
-            let char = expression[i];
-
-            // Power mode start - IMPROVED
-            if (!inPowerSection && expression.substring(i, i + 2) === "**") {
-                inPowerSection = true;
-                powerDepth = 0;
-                
-                html += `<span style="color:red; font-size:0.8em; vertical-align:super;">^</span>`;
-                
-                i += 2;
-                
-                // Check if there's a bracket after **
-                if (i < expression.length && expression[i] === '(') {
-                    html += `<span style="color:red;">(</span>`;
-                    powerDepth = 1;
-                    i++;
-                }
+        // Handle power content - FIXED: Keep red color for power section
+        if (inPowerSection) {
+            // If we're entering a number in power section
+            if (isDigitOrDecimal) {
+                currentNumber += char;
+                inNumber = true;
+                i++;
                 continue;
+            } else if (inNumber && currentNumber !== "") {
+                // Format the number we collected in power section WITH RED COLOR
+                const formattedNumber = formatNumberWithCommas(currentNumber);
+                html += `<span style="color:red;">${formattedNumber}</span>`;
+                currentNumber = "";
+                inNumber = false;
+                // Continue to process the current character
             }
-
-            // Handle power content - FIXED: Only until operator
-            if (inPowerSection) {
-                // Check if we should exit power section
-                if (powerDepth === 0 && /[\+\-\*\/]/.test(expression[i]) && i > 0) {
-                    inPowerSection = false;
-                    // Process this character normally
-                } else {
-                    if (expression[i] === "(") {
-                        powerDepth++;
-                        html += `<span style="color:red;">(</span>`;
-                    }
-                    else if (expression[i] === ")") {
-                        powerDepth--;
-                        html += `<span style="color:red;">)</span>`;
-                        if (powerDepth === 0) {
-                            i++;
-                            continue;
-                        }
-                    }
-                    else {
-                        html += `<span style="color:red;">${expression[i]}</span>`;
-                    }
-                    i++;
-                    continue;
+            
+            // Check if we should exit power section
+            if (powerDepth === 0 && /[\+\-\*\/]/.test(expression[i]) && i > 0) {
+                inPowerSection = false;
+                // Process this character normally
+            } else {
+                if (expression[i] === "(") {
+                    powerDepth++;
+                    html += `<span style="color:red;">(</span>`;
                 }
-            }
-
-            // Square root
-            if (expression[i] === '√') {
-                html += `<span style="color:red;font-weight:900;transform:scale(1.2,1.1)">√</span>`;
+                else if (expression[i] === ")") {
+                    powerDepth--;
+                    html += `<span style="color:red;">)</span>`;
+                    if (powerDepth === 0) {
+                        i++;
+                        continue;
+                    }
+                }
+                else if (expression[i] === '√') {
+                    // Square root in power section
+                    html += `<span style="color:red;font-weight:900;transform:scale(1.2,1.1)">√</span>`;
+                }
+                else {
+                    // Any other character in power section (operators, etc.)
+                    html += `<span style="color:red;">${char}</span>`;
+                }
                 i++;
                 continue;
             }
+        }
 
-            // Brackets coloring
-            if (char === "(") {
-                let color = bracketColors[stack.length % bracketColors.length];
-                stack.push(color);
-                html += `<span style="color:${color}">(</span>`;
+        // Square root (outside power section)
+        if (expression[i] === '√') {
+            // If we were in a number, format it before square root
+            if (inNumber && currentNumber !== "") {
+                html += `<span class="char">${formatNumberWithCommas(currentNumber)}</span>`;
+                currentNumber = "";
+                inNumber = false;
             }
-            else if (char === ")") {
-                let color = stack.pop() || "#333";
-                html += `<span style="color:${color}">)</span>`;
-            }
-            else {
-                // FIX: Don't convert * to × if it's part of **
-                let displayChar;
-                if (char === "*") {
-                    // Check if this is part of ** (even if not in power section now)
-                    if (i + 1 < expression.length && expression[i + 1] === "*") {
-                        // It's part of ** - skip both stars
-                        i += 2; // Skip both * characters
-                        continue; // Move to next iteration
-                    } else {
-                        // It's a single * (multiplication operator)
-                        displayChar = "×";
-                    }
-                } else if (char === "/") {
-                    displayChar = "÷";
-                } else {
-                    displayChar = char;
-                }
-
-                html += `<span class="char">${displayChar}</span>`;
-            }
-
+            
+            html += `<span style="color:red;font-weight:900;transform:scale(1.2,1.1)">√</span>`;
             i++;
+            continue;
         }
 
-        const wasFocused = document.activeElement === inputDisplay;
+        // Start or continue a number (outside power section)
+        if (isDigitOrDecimal) {
+            currentNumber += char;
+            inNumber = true;
+            i++;
+            continue;
+        }
         
-        inputDisplay.innerHTML = html;
-
-        if (wasFocused && html.length > 0) {
-            setTimeout(() => {
-                setCursorPosition(cursorPosition);
-            }, 10);
+        // If we were in a number and now encounter non-number character
+        if (inNumber && currentNumber !== "") {
+            // Format number with commas (normal numbers, not in power section)
+            html += `<span class="char">${formatNumberWithCommas(currentNumber)}</span>`;
+            currentNumber = "";
+            inNumber = false;
         }
 
-        setTimeout(() => {
-            inputDisplay.scrollLeft  = inputDisplay.scrollWidth;
-            resultDisplay.scrollLeft = resultDisplay.scrollWidth;
-        }, 50);
-
-        if (!justCalculated) {
-            resultDisplay.style.opacity = "0.5";
-            if (!["Error", "Close bracket", "Enter operator", "Invalid closing", "Invalid after ("].includes(resultDisplay.innerText)) {
-                resultDisplay.innerText = expression === "" ? "0" : "";
+        // Brackets coloring
+        if (char === "(") {
+            let color = bracketColors[stack.length % bracketColors.length];
+            stack.push(color);
+            html += `<span style="color:${color}">(</span>`;
+        }
+        else if (char === ")") {
+            let color = stack.pop() || "#333";
+            html += `<span style="color:${color}">)</span>`;
+        }
+        else {
+            // FIX: Don't convert * to × if it's part of **
+            let displayChar;
+            if (char === "*") {
+                // Check if this is part of ** (even if not in power section now)
+                if (i + 1 < expression.length && expression[i + 1] === "*") {
+                    // It's part of ** - skip both stars
+                    i += 2; // Skip both * characters
+                    continue; // Move to next iteration
+                } else {
+                    // It's a single * (multiplication operator)
+                    displayChar = "×";
+                }
+            } else if (char === "/") {
+                displayChar = "÷";
+            } else {
+                displayChar = char;
             }
+
+            html += `<span class="char">${displayChar}</span>`;
+        }
+
+        i++;
+    }
+    
+    // Last number ko bhi format karo agar bacha ho
+    if (inNumber && currentNumber !== "") {
+        if (inPowerSection) {
+            // Power section mein red color ke sath
+            html += `<span style="color:red;">${formatNumberWithCommas(currentNumber)}</span>`;
         } else {
-            resultDisplay.style.opacity = "1";
+            // Normal numbers
+            html += `<span class="char">${formatNumberWithCommas(currentNumber)}</span>`;
         }
     }
+
+    const wasFocused = document.activeElement === inputDisplay;
+    
+    inputDisplay.innerHTML = html;
+
+    if (wasFocused && html.length > 0) {
+        setTimeout(() => {
+            setCursorPosition(cursorPosition);
+        }, 10);
+    }
+
+    // Restore scroll position intelligently
+    setTimeout(() => {
+        if (wasScrolledToEnd || justCalculated) {
+            // If user was at the end or just calculated, scroll to end
+            inputDisplay.scrollLeft = inputDisplay.scrollWidth;
+        } else {
+            // Otherwise, try to maintain the relative scroll position
+            inputDisplay.scrollLeft = previousScrollLeft;
+            
+            // Adjust if cursor is outside visible area
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                const displayRect = inputDisplay.getBoundingClientRect();
+                
+                // If cursor is not visible, adjust scroll
+                if (rect.left < displayRect.left || rect.right > displayRect.right) {
+                    inputDisplay.scrollLeft += (rect.left - displayRect.left - 20);
+                }
+            }
+        }
+        
+        // For result display, always scroll to end
+        resultDisplay.scrollLeft = resultDisplay.scrollWidth;
+    }, 50);
+
+    if (!justCalculated) {
+        resultDisplay.style.opacity = "0.5";
+        if (!["Error", "Close bracket", "Enter operator", "Invalid closing", "Invalid after ("].includes(resultDisplay.innerText)) {
+            resultDisplay.innerText = expression === "" ? "0" : "";
+        }
+    } else {
+        resultDisplay.style.opacity = "1";
+    }
+}
 
     /* ===============================
        HELPER FUNCTIONS
     =============================== */
-    function setCursorPosition(pos) {
-        const selection = window.getSelection();
-        selection.removeAllRanges();
-        
-        if (pos === 0) {
-            const range = document.createRange();
-            range.setStart(inputDisplay, 0);
-            range.collapse(true);
-            selection.addRange(range);
-            inputDisplay.focus();
-            return;
-        }
-        
-        // Improved method to handle spans and text nodes
-        const walker = document.createTreeWalker(
-            inputDisplay,
-            NodeFilter.SHOW_TEXT,
-            null,
-            false
-        );
-        
-        let charCount = 0;
-        let targetNode = null;
-        let targetOffset = 0;
-        let found = false;
-        
-        let node;
-        while (node = walker.nextNode()) {
-            const textLength = node.textContent.length;
+/* ===============================
+   HELPER FUNCTIONS
+=============================== */
+        function setCursorPosition(pos) {
+            const textNodes = getTextNodes(inputDisplay);
+            let charCount = 0;
             
-            if (charCount + textLength >= pos) {
-                targetNode = node;
-                targetOffset = pos - charCount;
-                found = true;
-                break;
+            for (const node of textNodes) {
+                if (charCount + node.textContent.length >= pos) {
+                    const range = document.createRange();
+                    const selection = window.getSelection();
+                    range.setStart(node, Math.min(pos - charCount, node.textContent.length));
+                    range.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    inputDisplay.focus();
+                    break;
+                }
+                charCount += node.textContent.length;
             }
-            charCount += textLength;
         }
-        
-        if (found && targetNode) {
-            const range = document.createRange();
-            range.setStart(targetNode, Math.min(targetOffset, targetNode.textContent.length));
-            range.collapse(true);
-            selection.addRange(range);
-        } else {
-            // Fallback: set cursor at end
-            const range = document.createRange();
-            range.selectNodeContents(inputDisplay);
-            range.collapse(false);
-            selection.addRange(range);
+
+        function getTextNodes(element) {
+            const walker = document.createTreeWalker(
+                element,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+            const textNodes = [];
+            let node;
+            while (node = walker.nextNode()) {
+                textNodes.push(node);
+            }
+            return textNodes;
         }
-        
-        inputDisplay.focus();
+
+        // NEW FUNCTION: Format number with commas
+// NEW FUNCTION: Format number with commas (handles HTML spans)
+function formatNumberWithCommas(numStr) {
+    // Agar string empty hai to return karo
+    if (!numStr) return '';
+    
+    // Agar already HTML span hai to usko as-is return karo
+    if (numStr.includes('<span') || numStr.includes('</span>')) {
+        return numStr;
     }
+    
+    // Agar decimal hai to integer aur decimal parts alag karo
+    if (numStr.includes('.')) {
+        const parts = numStr.split('.');
+        const intPart = parts[0];
+        const decPart = parts[1];
+        
+        // Format integer part
+        let formattedInt = '';
+        let count = 0;
+        const isNegative = intPart.startsWith('-');
+        const intStr = isNegative ? intPart.substring(1) : intPart;
+        
+        for (let i = intStr.length - 1; i >= 0; i--) {
+            if (count > 0 && count % 3 === 0) {
+                formattedInt = ',' + formattedInt;
+            }
+            formattedInt = intStr[i] + formattedInt;
+            count++;
+        }
+        
+        if (isNegative) {
+            formattedInt = '-' + formattedInt;
+        }
+        
+        return formattedInt + '.' + decPart;
+    }
+    
+    // Integer number format karo
+    let formatted = '';
+    let count = 0;
+    const isNegative = numStr.startsWith('-');
+    const numStrClean = isNegative ? numStr.substring(1) : numStr;
+    
+    for (let i = numStrClean.length - 1; i >= 0; i--) {
+        if (count > 0 && count % 3 === 0) {
+            formatted = ',' + formatted;
+        }
+        formatted = numStrClean[i] + formatted;
+        count++;
+    }
+    
+    if (isNegative) {
+        formatted = '-' + formatted;
+    }
+    
+    return formatted;
+}
+
+        // NEW FUNCTION: Format integer part with commas
+        function formatIntegerWithCommas(intStr) {
+            // Remove any existing commas
+            intStr = intStr.replace(/,/g, '');
+            
+            // Handle negative numbers
+            const isNegative = intStr.startsWith('-');
+            if (isNegative) {
+                intStr = intStr.substring(1);
+            }
+            
+            // Add commas every 3 digits from right
+            let formatted = '';
+            let count = 0;
+            
+            for (let i = intStr.length - 1; i >= 0; i--) {
+                if (count > 0 && count % 3 === 0) {
+                    formatted = ',' + formatted;
+                }
+                formatted = intStr[i] + formatted;
+                count++;
+            }
+            
+            return (isNegative ? '-' : '') + formatted;
+        }
+
+        // NEW FUNCTION: Extract and format numbers in expression
+        function formatExpressionWithCommas(expr) {
+            // Expression ko parts mein todte hain: numbers, operators, brackets, etc.
+            let result = '';
+            let currentNumber = '';
+            
+            for (let i = 0; i < expr.length; i++) {
+                const char = expr[i];
+                
+                // Check if character is part of a number (digit or decimal point)
+                if (/[0-9.]/.test(char)) {
+                    currentNumber += char;
+                } else {
+                    // If we have accumulated a number, format it
+                    if (currentNumber !== '') {
+                        result += formatNumberWithCommas(currentNumber);
+                        currentNumber = '';
+                    }
+                    // Add the non-number character
+                    result += char;
+                }
+            }
+            
+            // Last number ko bhi format karo
+            if (currentNumber !== '') {
+                result += formatNumberWithCommas(currentNumber);
+            }
+            
+            return result;
+        }
+
+        // NEW FUNCTION: Remove commas from expression for calculation
+        function removeCommasFromExpression(expr) {
+            return expr.replace(/,/g, '');
+        }
+
+        function showResultMessage(message) {
+            resultDisplay.innerText = message;
+            resultDisplay.style.opacity = "1";
+            resultDisplay.style.color = "#ff4d4d";
+            justCalculated = false;
+            
+            setTimeout(() => {
+                resultDisplay.style.color = "#555";
+                if (expression === "") {
+                    resultDisplay.innerText = "0";
+                } else {
+                    resultDisplay.innerText = "";
+                }
+                if (!justCalculated) resultDisplay.style.opacity = "0.5";
+            }, 2000);
+        }
 
     function getTextNodes(element) {
         const walker = document.createTreeWalker(
@@ -593,146 +815,150 @@ document.addEventListener("DOMContentLoaded", function () {
       /* ===============================
        CALCULATE FUNCTION - FIXED FOR SQUARE ROOT
     =============================== */
-    window.calculate = function () {
-        if (expression === "") return;
-        if (isPowerMode) exitPower();
+    /* ===============================
+   CALCULATE FUNCTION - FIXED FOR SQUARE ROOT WITH COMMA FORMATTING
+=============================== */
+window.calculate = function () {
+    if (expression === "") return;
+    if (isPowerMode) exitPower();
 
-        let tempExpr = expression;
+    // Remove commas from expression before calculation
+    let tempExpr = removeCommasFromExpression(expression);
 
-        // FIX FOR SQUARE ROOT: Handle nested square roots
-        // First, count all √ characters
-        let sqrtCount = 0;
-        for (let char of tempExpr) {
-            if (char === '√') sqrtCount++;
+    // FIX FOR SQUARE ROOT: Handle nested square roots
+    // First, count all √ characters
+    let sqrtCount = 0;
+    for (let char of tempExpr) {
+        if (char === '√') sqrtCount++;
+    }
+    
+    // Replace each √ with Math.sqrt(
+    for (let s = 0; s < sqrtCount; s++) {
+        tempExpr = tempExpr.replace('√', 'Math.sqrt(');
+    }
+    
+    // Add closing brackets for all Math.sqrt(
+    for (let s = 0; s < sqrtCount; s++) {
+        // Find the position of Math.sqrt(
+        let sqrtPos = tempExpr.indexOf('Math.sqrt(');
+        if (sqrtPos === -1) break;
+        
+        // Find where to put closing bracket
+        let j = sqrtPos + 10; // After "Math.sqrt("
+        let bracketDepth = 0;
+        
+        while (j < tempExpr.length) {
+            if (tempExpr[j] === '(') bracketDepth++;
+            else if (tempExpr[j] === ')') {
+                if (bracketDepth === 0) break;
+                bracketDepth--;
+            }
+            else if (bracketDepth === 0 && /[\+\-\*\/]/.test(tempExpr[j])) {
+                break;
+            }
+            j++;
         }
         
-        // Replace each √ with Math.sqrt(
-        for (let s = 0; s < sqrtCount; s++) {
-            tempExpr = tempExpr.replace('√', 'Math.sqrt(');
+        // Insert closing bracket
+        tempExpr = tempExpr.slice(0, j) + ")" + tempExpr.slice(j);
+    }
+
+    // Count brackets - ORIGINAL LOGIC RESTORED
+    let openB  = (tempExpr.match(/\(/g) || []).length;
+    let closeB = (tempExpr.match(/\)/g) || []).length;
+    
+    // Agar brackets missing hain to notification show karo
+    if (openB > closeB) {
+        // Sirf agar √ nahi hai aur brackets missing hain tab error dikhao
+        if (!tempExpr.includes("Math.sqrt(")) {
+            showResultMessage("Close bracket");
+            return;
         }
+        // √ hai to automatically closing brackets add karo
+        tempExpr += ")".repeat(openB - closeB);
+    }
+
+    // Remove trailing operators
+    while (['+', '-', '*', '/'].includes(tempExpr.slice(-1))) {
+        tempExpr = tempExpr.slice(0, -1);
+    }
+
+    try {
+        let result = eval(tempExpr);
+        if (!Number.isInteger(result)) {
+            result = Math.round(result * 100000000) / 100000000;
+        }
+
+        // Format result with commas
+        let resultStr = result.toString();
+        let formattedResult = formatNumberWithCommas(resultStr);
         
-        // Add closing brackets for all Math.sqrt(
-        for (let s = 0; s < sqrtCount; s++) {
-            // Find the position of Math.sqrt(
-            let sqrtPos = tempExpr.indexOf('Math.sqrt(');
-            if (sqrtPos === -1) break;
-            
-            // Find where to put closing bracket
-            let j = sqrtPos + 10; // After "Math.sqrt("
-            let bracketDepth = 0;
-            
-            while (j < tempExpr.length) {
-                if (tempExpr[j] === '(') bracketDepth++;
-                else if (tempExpr[j] === ')') {
-                    if (bracketDepth === 0) break;
-                    bracketDepth--;
-                }
-                else if (bracketDepth === 0 && /[\+\-\*\/]/.test(tempExpr[j])) {
-                    break;
-                }
-                j++;
-            }
-            
-            // Insert closing bracket
-            tempExpr = tempExpr.slice(0, j) + ")" + tempExpr.slice(j);
-        }
-
-        // Count brackets - ORIGINAL LOGIC RESTORED
-        let openB  = (tempExpr.match(/\(/g) || []).length;
-        let closeB = (tempExpr.match(/\)/g) || []).length;
+        resultDisplay.innerText = formattedResult;
+        lastAnswer = resultStr; // Store without commas for future calculations
+        justCalculated = true;
         
-        // Agar brackets missing hain to notification show karo
-        if (openB > closeB) {
-            // Sirf agar √ nahi hai aur brackets missing hain tab error dikhao
-            if (!tempExpr.includes("Math.sqrt(")) {
-                showResultMessage("Close bracket");
-                return;
-            }
-            // √ hai to automatically closing brackets add karo
-            tempExpr += ")".repeat(openB - closeB);
-        }
+        cursorPosition = expression.length;
+        isPowerMode = false;
+        powerStartIndex = -1;
+        render();
 
-        // Remove trailing operators
-        while (['+', '-', '*', '/'].includes(tempExpr.slice(-1))) {
-            tempExpr = tempExpr.slice(0, -1);
-        }
-
-        try {
-            let result = eval(tempExpr);
-            if (!Number.isInteger(result)) {
-                result = Math.round(result * 100000000) / 100000000;
-            }
-
-            resultDisplay.innerText = result;
-            lastAnswer = result.toString();
-            justCalculated = true;
-            
-            cursorPosition = expression.length;
-            isPowerMode = false;
-            powerStartIndex = -1;
-            render();
-
-        } catch (error) {
-            console.error("Calculation error:", error);
-            resultDisplay.innerText = "Error";
-            resultDisplay.style.opacity = "1";
-            justCalculated = false;
-        }
-    };
+    } catch (error) {
+        console.error("Calculation error:", error);
+        resultDisplay.innerText = "Error";
+        resultDisplay.style.opacity = "1";
+        justCalculated = false;
+    }
+};
 	
     /* ===============================
        CLEAR & BACKSPACE
     =============================== */
     window.backspace = function (e) {
-        if (e) e.preventDefault();
+        if (e) e.preventDefault(); // Prevent default browser behavior
         
         inputDisplay.focus();
         
         if (justCalculated) {
+            // Instead of clearing everything, just exit calculation mode
+            // and allow editing the expression
             justCalculated = false;
             resultDisplay.style.opacity = "0.5";
             resultDisplay.innerText = "";
+            
+            // Keep the expression for editing
             cursorPosition = expression.length;
             render();
             return;
         }
         
         if (cursorPosition > 0) {
-            // Check if deleting ** operator
-            if (cursorPosition >= 2 && expression.substring(cursorPosition - 2, cursorPosition) === "**") {
+            // Check if we're trying to delete power value (number after **)
+            if (cursorPosition >= 3 && 
+                expression.substring(cursorPosition - 3, cursorPosition - 1) === "**") {
+                // User is trying to delete power value, not power operator
+                // Just delete one character normally
+                expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
+                cursorPosition--;
+            } 
+            // Check if deleting power operator
+            else if (cursorPosition >= 2 && expression.substring(cursorPosition - 2, cursorPosition) === "**") {
                 expression = expression.slice(0, cursorPosition - 2) + expression.slice(cursorPosition);
                 cursorPosition -= 2;
                 isPowerMode = false;
                 powerStartIndex = -1;
-            } 
-            else if (expression[cursorPosition - 1] === '√') {
+            } else if (expression[cursorPosition - 1] === '√') {
                 expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
                 cursorPosition--;
-            }
-            else {
-                // Check if we're deleting from inside power section
-                let deletingFromPowerSection = false;
-                if (isPowerMode && cursorPosition > powerStartIndex) {
-                    deletingFromPowerSection = true;
-                }
-                
+            } else {
                 expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
                 cursorPosition--;
-                
-                // Check if we deleted the entire power section
-                if (deletingFromPowerSection && cursorPosition <= powerStartIndex) {
-                    isPowerMode = false;
-                    powerStartIndex = -1;
-                }
-                
-                // Check if we're still in power mode but ** is gone
-                if (isPowerMode && !expression.includes("**")) {
+                // Reset power mode if we deleted something inside it
+                if (isPowerMode && cursorPosition < powerStartIndex) {
                     isPowerMode = false;
                     powerStartIndex = -1;
                 }
             }
         }
-        
         render();
     };
 
