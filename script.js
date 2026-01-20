@@ -35,6 +35,46 @@ document.addEventListener("DOMContentLoaded", function () {
     let cursorPosition = 0;
     let powerStartIndex = -1;
 	let powerSectionEnd = -1;  // Track where power section should end
+	let lastExpression = ""; // ← YE NAYA VARIABLE ADD KARO	
+
+	// Data save karne ke liye function
+	function saveToStorage() {
+		try {
+			if (lastAnswer) {
+				localStorage.setItem('calculator_lastAnswer', lastAnswer);
+			}
+			if (lastExpression) {
+				localStorage.setItem('calculator_lastExpression', lastExpression);
+			}
+			
+			// Debugging ke liye
+			console.log("Saved to storage:");
+			console.log("Last Answer:", lastAnswer);
+			console.log("Last Expression:", lastExpression);
+		} catch (e) {
+			console.error("Error saving to localStorage:", e);
+		}
+	}
+
+
+	/* ===============================
+   PERSISTENT STORAGE - LOAD FROM LOCALSTORAGE
+=============================== */
+// Application load hone par data load karo
+function loadFromStorage() {
+    try {
+        lastAnswer = localStorage.getItem('calculator_lastAnswer') || "";
+        lastExpression = localStorage.getItem('calculator_lastExpression') || "";
+        
+        // Debugging ke liye
+        console.log("Loaded from storage:");
+        console.log("Last Answer:", lastAnswer);
+        console.log("Last Expression:", lastExpression);
+    } catch (e) {
+        console.error("Error loading from localStorage:", e);
+    }
+}
+
 
     /* ===============================
        EDITABLE INPUT LOGIC
@@ -312,6 +352,34 @@ document.addEventListener("DOMContentLoaded", function () {
         resultDisplay.style.opacity = "1";
     }
 }
+	
+		/* ===============================
+	   NEW: LAST EXPRESSION FUNCTION
+	=============================== */
+
+		window.useLastExpression = function () {
+			if (lastExpression) {
+				inputDisplay.focus();
+				
+				// Check if we should clear current expression
+				if (justCalculated || expression === "") {
+					expression = lastExpression;
+					cursorPosition = expression.length;
+					justCalculated = false;
+				} else {
+					// Append to current expression
+					expression = expression.slice(0, cursorPosition) + lastExpression + expression.slice(cursorPosition);
+					cursorPosition += lastExpression.length;
+				}
+				
+				// Data ko update karo aur save karo
+				saveToStorage(); // ← YE LINE ADD KARO
+				render();
+			} else {
+				// Agar koi last expression nahi hai, to message show karo
+				showResultMessage("No previous expression");
+			}
+		};
 
     /* ===============================
        HELPER FUNCTIONS
@@ -336,22 +404,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        function getTextNodes(element) {
-            const walker = document.createTreeWalker(
-                element,
-                NodeFilter.SHOW_TEXT,
-                null,
-                false
-            );
-            const textNodes = [];
-            let node;
-            while (node = walker.nextNode()) {
-                textNodes.push(node);
-            }
-            return textNodes;
-        }
-
-        // NEW FUNCTION: Format number with commas
 // NEW FUNCTION: Format number with commas (handles HTML spans)
 function formatNumberWithCommas(numStr) {
     // Agar string empty hai to return karo
@@ -472,38 +524,6 @@ function formatNumberWithCommas(numStr) {
             return expr.replace(/,/g, '');
         }
 
-        function showResultMessage(message) {
-            resultDisplay.innerText = message;
-            resultDisplay.style.opacity = "1";
-            resultDisplay.style.color = "#ff4d4d";
-            justCalculated = false;
-            
-            setTimeout(() => {
-                resultDisplay.style.color = "#555";
-                if (expression === "") {
-                    resultDisplay.innerText = "0";
-                } else {
-                    resultDisplay.innerText = "";
-                }
-                if (!justCalculated) resultDisplay.style.opacity = "0.5";
-            }, 2000);
-        }
-
-    function getTextNodes(element) {
-        const walker = document.createTreeWalker(
-            element,
-            NodeFilter.SHOW_TEXT,
-            null,
-            false
-        );
-        const textNodes = [];
-        let node;
-        while (node = walker.nextNode()) {
-            textNodes.push(node);
-        }
-        return textNodes;
-    }
-
     function showResultMessage(message) {
         resultDisplay.innerText = message;
         resultDisplay.style.opacity = "1";
@@ -520,6 +540,22 @@ function formatNumberWithCommas(numStr) {
             if (!justCalculated) resultDisplay.style.opacity = "0.5";
         }, 2000);
     }
+
+    function getTextNodes(element) {
+        const walker = document.createTreeWalker(
+            element,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
+        const textNodes = [];
+        let node;
+        while (node = walker.nextNode()) {
+            textNodes.push(node);
+        }
+        return textNodes;
+    }
+
 
     /* ===============================
        APPEND & INPUT HANDLING
@@ -810,115 +846,125 @@ function formatNumberWithCommas(numStr) {
         render();
     };
 
-    window.useAns = function () {
-        if (lastAnswer) {
-            inputDisplay.focus();
-            cursorPosition = expression.length;
-            window.append(lastAnswer);
-        }
-    };
+	/* ===============================
+	   LAST ANSWER FUNCTION
+	=============================== */
+	window.useAns = function () {
+		if (lastAnswer) {
+			inputDisplay.focus();
+			cursorPosition = expression.length;
+			
+			// Data ko update karo aur save karo
+			saveToStorage(); // ← YE LINE ADD KARO
+			window.append(lastAnswer);
+		} else {
+			// Agar koi last answer nahi hai, to message show karo
+			showResultMessage("No previous answer");
+		}
+	};
 
     window.toggleTheme = function () {
         document.body.classList.toggle("light-mode");
     };
 
-      /* ===============================
-       CALCULATE FUNCTION - FIXED FOR SQUARE ROOT
-    =============================== */
-    /* ===============================
-   CALCULATE FUNCTION - FIXED FOR SQUARE ROOT WITH COMMA FORMATTING
-=============================== */
-window.calculate = function () {
-    if (expression === "") return;
-    if (isPowerMode) exitPower();
+	/* ===============================
+	   CALCULATE FUNCTION - FIXED FOR SQUARE ROOT WITH COMMA FORMATTING
+		=============================== */
+	window.calculate = function () {
+		if (expression === "") return;
+		if (isPowerMode) exitPower();
+		
+		// Save current expression before calculation
+		lastExpression = expression; // ← YE LINE ADD KARO
 
-    // Remove commas from expression before calculation
-    let tempExpr = removeCommasFromExpression(expression);
+		// Remove commas from expression before calculation
+		let tempExpr = removeCommasFromExpression(expression);
 
-    // FIX FOR SQUARE ROOT: Handle nested square roots
-    // First, count all √ characters
-    let sqrtCount = 0;
-    for (let char of tempExpr) {
-        if (char === '√') sqrtCount++;
-    }
-    
-    // Replace each √ with Math.sqrt(
-    for (let s = 0; s < sqrtCount; s++) {
-        tempExpr = tempExpr.replace('√', 'Math.sqrt(');
-    }
-    
-    // Add closing brackets for all Math.sqrt(
-    for (let s = 0; s < sqrtCount; s++) {
-        // Find the position of Math.sqrt(
-        let sqrtPos = tempExpr.indexOf('Math.sqrt(');
-        if (sqrtPos === -1) break;
-        
-        // Find where to put closing bracket
-        let j = sqrtPos + 10; // After "Math.sqrt("
-        let bracketDepth = 0;
-        
-        while (j < tempExpr.length) {
-            if (tempExpr[j] === '(') bracketDepth++;
-            else if (tempExpr[j] === ')') {
-                if (bracketDepth === 0) break;
-                bracketDepth--;
-            }
-            else if (bracketDepth === 0 && /[\+\-\*\/]/.test(tempExpr[j])) {
-                break;
-            }
-            j++;
-        }
-        
-        // Insert closing bracket
-        tempExpr = tempExpr.slice(0, j) + ")" + tempExpr.slice(j);
-    }
+		// FIX FOR SQUARE ROOT: Handle nested square roots
+		// First, count all √ characters
+		let sqrtCount = 0;
+		for (let char of tempExpr) {
+			if (char === '√') sqrtCount++;
+		}
+		
+		// Replace each √ with Math.sqrt(
+		for (let s = 0; s < sqrtCount; s++) {
+			tempExpr = tempExpr.replace('√', 'Math.sqrt(');
+		}
+		
+		// Add closing brackets for all Math.sqrt(
+		for (let s = 0; s < sqrtCount; s++) {
+			// Find the position of Math.sqrt(
+			let sqrtPos = tempExpr.indexOf('Math.sqrt(');
+			if (sqrtPos === -1) break;
+			
+			// Find where to put closing bracket
+			let j = sqrtPos + 10; // After "Math.sqrt("
+			let bracketDepth = 0;
+			
+			while (j < tempExpr.length) {
+				if (tempExpr[j] === '(') bracketDepth++;
+				else if (tempExpr[j] === ')') {
+					if (bracketDepth === 0) break;
+					bracketDepth--;
+				}
+				else if (bracketDepth === 0 && /[\+\-\*\/]/.test(tempExpr[j])) {
+					break;
+				}
+				j++;
+			}
+			
+			// Insert closing bracket
+			tempExpr = tempExpr.slice(0, j) + ")" + tempExpr.slice(j);
+		}
 
-    // Count brackets - ORIGINAL LOGIC RESTORED
-    let openB  = (tempExpr.match(/\(/g) || []).length;
-    let closeB = (tempExpr.match(/\)/g) || []).length;
-    
-    // Agar brackets missing hain to notification show karo
-    if (openB > closeB) {
-        // Sirf agar √ nahi hai aur brackets missing hain tab error dikhao
-        if (!tempExpr.includes("Math.sqrt(")) {
-            showResultMessage("Close bracket");
-            return;
-        }
-        // √ hai to automatically closing brackets add karo
-        tempExpr += ")".repeat(openB - closeB);
-    }
+		// Count brackets - ORIGINAL LOGIC RESTORED
+		let openB  = (tempExpr.match(/\(/g) || []).length;
+		let closeB = (tempExpr.match(/\)/g) || []).length;
+		
+		// Agar brackets missing hain to notification show karo
+		if (openB > closeB) {
+			// Sirf agar √ nahi hai aur brackets missing hain tab error dikhao
+			if (!tempExpr.includes("Math.sqrt(")) {
+				showResultMessage("Close bracket");
+				return;
+			}
+			// √ hai to automatically closing brackets add karo
+			tempExpr += ")".repeat(openB - closeB);
+		}
 
-    // Remove trailing operators
-    while (['+', '-', '*', '/'].includes(tempExpr.slice(-1))) {
-        tempExpr = tempExpr.slice(0, -1);
-    }
+		// Remove trailing operators
+		while (['+', '-', '*', '/'].includes(tempExpr.slice(-1))) {
+			tempExpr = tempExpr.slice(0, -1);
+		}
 
-    try {
-        let result = eval(tempExpr);
-        if (!Number.isInteger(result)) {
-            result = Math.round(result * 100000000) / 100000000;
-        }
+		try {
+			let result = eval(tempExpr);
+			if (!Number.isInteger(result)) {
+				result = Math.round(result * 100000000) / 100000000;
+			}
 
-        // Format result with commas
-        let resultStr = result.toString();
-        let formattedResult = formatNumberWithCommas(resultStr);
-        
-        resultDisplay.innerText = formattedResult;
-        lastAnswer = resultStr; // Store without commas for future calculations
-        justCalculated = true;
-        
-        cursorPosition = expression.length;
-        isPowerMode = false;
-        powerStartIndex = -1;
-        render();
+			// Format result with commas
+			let resultStr = result.toString();
+			let formattedResult = formatNumberWithCommas(resultStr);
+			
+			resultDisplay.innerText = formattedResult;
+			lastAnswer = resultStr; // Store without commas for future calculations
+			justCalculated = true;
+			
+			cursorPosition = expression.length;
+			isPowerMode = false;
+			powerStartIndex = -1;
+			saveToStorage();
+			render();
 
-    } catch (error) {
-        console.error("Calculation error:", error);
-        resultDisplay.innerText = "Error";
-        resultDisplay.style.opacity = "1";
-        justCalculated = false;
-    }
-};
+		} catch (error) {
+			console.error("Calculation error:", error);
+			resultDisplay.innerText = "Error";
+			resultDisplay.style.opacity = "1";
+			justCalculated = false;
+		}
+	};
 	
     /* ===============================
        CLEAR & BACKSPACE
@@ -1021,6 +1067,12 @@ window.calculate = function () {
         if (e.key === 'Escape') clearDisplay();
     });
 
+    // Initial render se PEHLE load karo
+    loadFromStorage();
+    
     // Initial render
     render();
-});
+    
+    // Page unload hone par bhi save karo
+    window.addEventListener('beforeunload', saveToStorage);
+}); // document.addEventListener ka end

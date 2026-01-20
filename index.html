@@ -11,7 +11,7 @@
 
 <div class="calculator">
     <div id="display" class="display">
-        <div id="input-line" class="input-line" contenteditable="true" inputmode="none"></div>	
+        <div id="input-line" class="input-line" contenteditable="true" inputmode="none"></div>    
         <div id="result-line" class="result-line">0</div>
     </div>
 
@@ -21,10 +21,10 @@
         <button onclick="append(')')">)</button>
         <button onclick="backspace()">⌫</button>
 
-		<button onclick="append('**')">^</button>
-		<button onclick="exitPower()" style="font-size: 25px;">↵</button>
-		<button onclick="toggleTheme()">🌓</button>
-		<button onclick="appendSqrt()">√</button>
+        <button onclick="append('**')">^</button>
+        <button onclick="exitPower()" style="font-size: 25px;">↵</button>
+        <button onclick="toggleTheme()">🌓</button>
+        <button onclick="appendSqrt()">√</button>
 
         <button onclick="append('7')">7</button>
         <button onclick="append('8')">8</button>
@@ -46,7 +46,9 @@
         <button onclick="calculate()" class="zero">=</button>
         <button onclick="append('+')" class="zero">+</button>
 
-        <button onclick="useAns()" class="ans">Last ans</button>
+        <!-- Naye buttons: Last Expression aur Last Answer -->
+        <button onclick="useLastExpression()" class="last-exp">Last Exp</button>
+        <button onclick="useAns()" class="last-ans">Last Ans</button>
 
     </div>
 </div>

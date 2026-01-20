@@ -79,7 +79,7 @@ body {
 }
 
 button {
-    font-size: clamp(18px, 6vw, 24px);
+    font-size: clamp(18px, 6vw, 25px);
     cursor: pointer;
     border: none;
     border-radius: 0px;
@@ -155,4 +155,29 @@ body.light-mode button:nth-child(4n) {
 /* Style for numbers with commas */
 .number-with-commas {
     letter-spacing: 0.2px;
+}
+
+/* Add this CSS to your style.css file */
+
+/* For Last Exp and Last Ans buttons text size */
+.last-exp, .last-ans {
+    font-size: clamp(14px, 4vw, 16px) !important; /* Smaller font size */
+    white-space: nowrap; /* Text ko wrap na kare */
+    overflow: hidden; /* Overflow hide */
+    text-overflow: ellipsis; /* Agar text lamba hai to ... show kare */
+    padding: 2px 5px !important; /* Less padding */
+}
+
+/* Light mode mein bhi apply karo */
+body.light-mode .last-exp,
+body.light-mode .last-ans {
+    font-size: clamp(12px, 4vw, 16px) !important;
+}
+
+/* Agar text bahut lamba hai to smaller size */
+@media (max-width: 360px) {
+    .last-exp, .last-ans {
+        font-size: 12px !important; /* Extra small screens ke liye */
+        padding: 1px 3px !important;
+    }
 }
