@@ -102,8 +102,6 @@ button:nth-child(4n) {
     color: #00FF00;
 }
 
-/* --- Naya Code niche paste karein --- */
-
 /* Jab body par 'light-mode' class hogi tab ye apply hoga */
 body.light-mode {
     background: #e0e0e0;
@@ -118,6 +116,7 @@ body.light-mode button {
     background: #ddd;
     color: #333;
     box-shadow: 0 3px 0 #bbb;
+	font-size: clamp(18px, 6vw, 25px) !important;
 }
 
 body.light-mode .display {
@@ -161,7 +160,7 @@ body.light-mode button:nth-child(4n) {
 
 /* For Last Exp and Last Ans buttons text size */
 .last-exp, .last-ans {
-    font-size: clamp(14px, 4vw, 16px) !important; /* Smaller font size */
+    font-size: clamp(12px, 4vw, 16px) !important; /* Smaller font size */
     white-space: nowrap; /* Text ko wrap na kare */
     overflow: hidden; /* Overflow hide */
     text-overflow: ellipsis; /* Agar text lamba hai to ... show kare */
@@ -177,7 +176,7 @@ body.light-mode .last-ans {
 /* Agar text bahut lamba hai to smaller size */
 @media (max-width: 360px) {
     .last-exp, .last-ans {
-        font-size: 12px !important; /* Extra small screens ke liye */
+        font-size: 14px !important; /* Extra small screens ke liye */
         padding: 1px 3px !important;
     }
 }
