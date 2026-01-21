@@ -36,6 +36,8 @@ document.addEventListener("DOMContentLoaded", function () {
     let powerStartIndex = -1;
 	let powerSectionEnd = -1;  // Track where power section should end
 	let lastExpression = ""; // ← YE NAYA VARIABLE ADD KARO	
+	let lastButtonPressed = ""; // Track last pressed button
+let consecutiveButtonPresses = 0; // Track consecutive presse
 
 	// Data save karne ke liye function
 	function saveToStorage() {
@@ -357,29 +359,55 @@ function loadFromStorage() {
 	   NEW: LAST EXPRESSION FUNCTION
 	=============================== */
 
-		window.useLastExpression = function () {
-			if (lastExpression) {
-				inputDisplay.focus();
-				
-				// Check if we should clear current expression
-				if (justCalculated || expression === "") {
-					expression = lastExpression;
-					cursorPosition = expression.length;
-					justCalculated = false;
-				} else {
-					// Append to current expression
-					expression = expression.slice(0, cursorPosition) + lastExpression + expression.slice(cursorPosition);
-					cursorPosition += lastExpression.length;
+	/* ===============================
+	NEW: LAST EXPRESSION FUNCTION
+	=============================== */
+
+	window.useLastExpression = function () {
+		// Agar same button consecutive press ho raha hai
+		if (lastButtonPressed === "lastExp") {
+			consecutiveButtonPresses++;
+		} else {
+			consecutiveButtonPresses = 1;
+			lastButtonPressed = "lastExp";
+		}
+		
+		// Agar doosri consecutive press hai
+		if (consecutiveButtonPresses >= 2) {
+			showResultMessage("Enter operator");
+			return;
+		}
+		
+		if (lastExpression) {
+			inputDisplay.focus();
+			
+			// Check if we should clear current expression
+			if (justCalculated || expression === "") {
+				expression = lastExpression;
+				cursorPosition = expression.length;
+				justCalculated = false;
+			} else {
+				// Check if last character is a number or closing bracket
+				let lastChar = expression.slice(-1);
+				if (/[0-9)]/.test(lastChar)) {
+					showResultMessage("Enter operator");
+					consecutiveButtonPresses = 2; // Force next press to show message
+					return;
 				}
 				
-				// Data ko update karo aur save karo
-				saveToStorage(); // ← YE LINE ADD KARO
-				render();
-			} else {
-				// Agar koi last expression nahi hai, to message show karo
-				showResultMessage("No previous expression");
+				// Append to current expression
+				expression = expression.slice(0, cursorPosition) + lastExpression + expression.slice(cursorPosition);
+				cursorPosition += lastExpression.length;
 			}
-		};
+			
+			// Data ko update karo aur save karo
+			saveToStorage();
+			render();
+		} else {
+			// Agar koi last expression nahi hai, to message show karo
+			showResultMessage("No previous expression");
+		}
+	};
 
     /* ===============================
        HELPER FUNCTIONS
@@ -561,6 +589,10 @@ function formatNumberWithCommas(numStr) {
        APPEND & INPUT HANDLING
     =============================== */
     window.append = function (value) {
+		
+		consecutiveButtonPresses = 0;
+		lastButtonPressed = "";
+		
         isManualEditing = false;
         
         // FIX: AGAR JUST CALCULATED HAI AUR OPERATOR HAI, TO ANSWER KO EXPRESSION MEIN DAL DO
@@ -849,13 +881,38 @@ function formatNumberWithCommas(numStr) {
 	/* ===============================
 	   LAST ANSWER FUNCTION
 	=============================== */
+	/* ===============================
+   LAST ANSWER FUNCTION
+=============================== */
 	window.useAns = function () {
+		// Agar same button consecutive press ho raha hai
+		if (lastButtonPressed === "lastAns") {
+			consecutiveButtonPresses++;
+		} else {
+			consecutiveButtonPresses = 1;
+			lastButtonPressed = "lastAns";
+		}
+		
+		// Agar doosri consecutive press hai
+		if (consecutiveButtonPresses >= 2) {
+			showResultMessage("Enter operator");
+			return;
+		}
+		
 		if (lastAnswer) {
 			inputDisplay.focus();
 			cursorPosition = expression.length;
 			
+			// Check if last character is a number or closing bracket
+			let lastChar = expression.slice(-1);
+			if (cursorPosition > 0 && /[0-9)]/.test(lastChar)) {
+				showResultMessage("Enter operator");
+				consecutiveButtonPresses = 2; // Force next press to show message
+				return;
+			}
+			
 			// Data ko update karo aur save karo
-			saveToStorage(); // ← YE LINE ADD KARO
+			saveToStorage();
 			window.append(lastAnswer);
 		} else {
 			// Agar koi last answer nahi hai, to message show karo
@@ -969,69 +1026,77 @@ function formatNumberWithCommas(numStr) {
     /* ===============================
        CLEAR & BACKSPACE
     =============================== */
-    window.backspace = function (e) {
-        if (e) e.preventDefault(); // Prevent default browser behavior
+	window.backspace = function (e) {
+    if (e) e.preventDefault();
+    
+    inputDisplay.focus();
+    
+    if (justCalculated) {
+        justCalculated = false;
+        resultDisplay.style.opacity = "0.5";
+        resultDisplay.innerText = "";
         
-        inputDisplay.focus();
-        
-        if (justCalculated) {
-            // Instead of clearing everything, just exit calculation mode
-            // and allow editing the expression
-            justCalculated = false;
-            resultDisplay.style.opacity = "0.5";
-            resultDisplay.innerText = "";
-            
-            // Keep the expression for editing
-            cursorPosition = expression.length;
-            render();
-            return;
-        }
-        
-        if (cursorPosition > 0) {
-            // Check if we're trying to delete power value (number after **)
-            if (cursorPosition >= 3 && 
-                expression.substring(cursorPosition - 3, cursorPosition - 1) === "**") {
-                // User is trying to delete power value, not power operator
-                // Just delete one character normally
-                expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
-                cursorPosition--;
-            } 
-            // Check if deleting power operator
-            else if (cursorPosition >= 2 && expression.substring(cursorPosition - 2, cursorPosition) === "**") {
-                expression = expression.slice(0, cursorPosition - 2) + expression.slice(cursorPosition);
-                cursorPosition -= 2;
+        cursorPosition = expression.length;
+        render();
+        return;
+    }
+    
+    // Reset consecutive presses
+    consecutiveButtonPresses = 0;
+    lastButtonPressed = "";
+    
+    if (cursorPosition > 0) {
+        // Check if we're trying to delete power value (number after **)
+        if (cursorPosition >= 3 && 
+            expression.substring(cursorPosition - 3, cursorPosition - 1) === "**") {
+            // User is trying to delete power value, not power operator
+            // Just delete one character normally
+            expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
+            cursorPosition--;
+        } 
+        // Check if deleting power operator
+        else if (cursorPosition >= 2 && expression.substring(cursorPosition - 2, cursorPosition) === "**") {
+            expression = expression.slice(0, cursorPosition - 2) + expression.slice(cursorPosition);
+            cursorPosition -= 2;
+            isPowerMode = false;
+            powerStartIndex = -1;
+        } else if (expression[cursorPosition - 1] === '√') {
+            expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
+            cursorPosition--;
+        } else {
+            expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
+            cursorPosition--;
+            // Reset power mode if we deleted something inside it
+            if (isPowerMode && cursorPosition < powerStartIndex) {
                 isPowerMode = false;
                 powerStartIndex = -1;
-            } else if (expression[cursorPosition - 1] === '√') {
-                expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
-                cursorPosition--;
-            } else {
-                expression = expression.slice(0, cursorPosition - 1) + expression.slice(cursorPosition);
-                cursorPosition--;
-                // Reset power mode if we deleted something inside it
-                if (isPowerMode && cursorPosition < powerStartIndex) {
-                    isPowerMode = false;
-                    powerStartIndex = -1;
-                }
             }
         }
+        
         render();
-    };
+    }
+	};
 
-    window.clearDisplay = function () {
-        expression = "";
-        cursorPosition = 0;
-        isPowerMode = false;
-        powerStartIndex = -1;
-        justCalculated = false;
-        resultDisplay.innerText = "0";
-        inputDisplay.focus();
-        render();
-    };
+	window.clearDisplay = function () {
+		// Reset consecutive presses
+		consecutiveButtonPresses = 0;
+		lastButtonPressed = "";
+		
+		expression = "";
+		cursorPosition = 0;
+		isPowerMode = false;
+		powerStartIndex = -1;
+		justCalculated = false;
+		resultDisplay.innerText = "0";
+		inputDisplay.focus();
+		render();
+	};
+
 
     /* ===============================
        KEYBOARD SUPPORT
     =============================== */
+    // Keyboard support
     document.addEventListener("keydown", (e) => {
         if (document.activeElement === inputDisplay) {
             const selection = window.getSelection();
@@ -1075,4 +1140,43 @@ function formatNumberWithCommas(numStr) {
     
     // Page unload hone par bhi save karo
     window.addEventListener('beforeunload', saveToStorage);
+    
+    // Simple touch feedback for all calculator buttons
+    document.querySelectorAll('.calc-btn, .special-btn, button').forEach(btn => {
+        // Touch start (finger press)
+        btn.addEventListener('touchstart', function() {
+            this.style.transform = 'scale(0.92)';
+            this.style.opacity = '0.9';
+            this.style.transition = 'transform 0.1s, opacity 0.1s';
+        });
+        
+        // Touch end (finger release)
+        btn.addEventListener('touchend', function() {
+            this.style.transform = 'scale(1)';
+            this.style.opacity = '1';
+        });
+        
+        // Touch cancel (finger slide away)
+        btn.addEventListener('touchcancel', function() {
+            this.style.transform = 'scale(1)';
+            this.style.opacity = '1';
+        });
+        
+        // Mouse events for desktop testing
+        btn.addEventListener('mousedown', function() {
+            this.style.transform = 'scale(0.92)';
+            this.style.opacity = '0.9';
+        });
+        
+        btn.addEventListener('mouseup', function() {
+            this.style.transform = 'scale(1)';
+            this.style.opacity = '1';
+        });
+        
+        btn.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+            this.style.opacity = '1';
+        });
+    });
+    
 }); // document.addEventListener ka end
