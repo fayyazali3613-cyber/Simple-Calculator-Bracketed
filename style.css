@@ -59,10 +59,10 @@ body {
 
 .input-line {
     font-size: clamp(36px, 7vw, 44px);
-    margin-top: 1px;
+    margin-top: 5px;
     color: #333;
     font-weight: bold;
-    min-height: 50px;
+    height: 70px;
     overflow-x: auto;
     white-space: nowrap;
     scrollbar-width: none;
@@ -77,12 +77,18 @@ body {
 .result-line {
     font-size: clamp(38px, 12vw, 50px);
     font-weight: bold;
-    min-height: 60px;
+    height: 70px;
     color: #555;
     overflow-x: auto;
     white-space: nowrap;
     scrollbar-width: none;
+
+    display: flex;
+    align-items: flex-end;       /* bottom */
+    justify-content: flex-end;   /* right */
+    padding-bottom: px;         /* adjust if needed */
 }
+
 
 .result-line::-webkit-scrollbar {
     display: none;
