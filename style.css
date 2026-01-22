@@ -2,22 +2,23 @@ body {
     background: #121212;
     display: flex;
     justify-content: center;
-    align-items: flex-end;
-    height: 100vh;
+    align-items: center;
+    min-height: 100vh;
     font-family: sans-serif;
     margin: 0;
-    padding-bottom: 20px;
+    padding: 10px;
     box-sizing: border-box;
 }
 
 .calculator {
     width: 100%; 
-    max-width: 360px; 
+    max-width: 380px;
     background: #1e1e1e;
     padding: 20px 5px 10px 5px; 
     border-radius: 10px;
     box-shadow: 0 -5px 30px rgba(0,0,0,0.5);
     box-sizing: border-box;
+    margin: auto;
 }
 
 .input-line:focus {
@@ -71,13 +72,13 @@ body {
 .buttons {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    grid-auto-rows: clamp(55px, 18vw, 60px);
-    gap: 3px;
+    grid-auto-rows: 60px;
+    gap: 5px;
     padding: 0;
 }
 
 button {
-    font-size: clamp(18px, 6vw, 25px);
+    font-size: 22px; 
     transition: transform 0.1s, opacity 0.1s !important;
     cursor: pointer;
     border: none;
@@ -115,7 +116,7 @@ body.light-mode button {
     background: #ddd;
     color: #333;
     box-shadow: 0 3px 0 #bbb;
-    font-size: clamp(18px, 6vw, 25px) !important;
+    font-size: 22px;
 }
 
 body.light-mode .display {
@@ -163,15 +164,66 @@ body.light-mode .last-ans {
     font-size: clamp(12px, 4vw, 16px) !important;
 }
 
-@media (max-width: 360px) {
+@media (max-width: 400px) {
     .last-exp, .last-ans {
         font-size: 14px !important;
         padding: 1px 3px !important;
     }
+	
+    .calculator {
+        max-width: 100%;
+        padding: 10px;
+        border-radius: 0;
+        box-shadow: none;
+    }
+	
+    button {
+        font-size: 20px;
+    }
+	
+    .display {
+        height: 100px;
+        padding: 10px;
+    }
+	
+    .input-line {
+        font-size: 30px;
+        height: 45px;
+    }
+    
+    .result-line {
+        font-size: 35px;
+    }
+    
+    /* Light mode ke liye bhi */
+    body.light-mode button {
+        font-size: 20px;
+    }
 }
+
+@media (max-width: 320px) {
+    .buttons {
+        grid-auto-rows: 50px;
+    }
+    
+    button {
+        font-size: 18px;
+    }
+    
+    .last-exp, .last-ans {
+        font-size: 14px !important;
+        padding: 1px !important;
+    }
+    
+    /* Light mode ke liye bhi */
+    body.light-mode button {
+        font-size: 18px;
+    }
+}
+
 /* Double height buttons for + and = */
 button.calc-btn.equals,
 button.calc-btn.operator.zero {
     grid-row: span 2 !important;
-    height: calc(clamp(55px, 18vw, 60px) * 2 + 3px) !important;
+    height: calc(60px * 2 + 5px) !important; /* FIXED VALUE */
 }
