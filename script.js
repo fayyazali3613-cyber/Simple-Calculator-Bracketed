@@ -163,13 +163,13 @@ function loadFromStorage() {
             inPowerSection = true;
             powerDepth = 0;
             
-            html += `<span style="color:red; font-size:0.8em; vertical-align:super;">^</span>`;
+            html += `<span class="power-symbol">^</span>`;
             
             i += 2;
             
             // Check if there's a bracket after **
             if (i < expression.length && expression[i] === '(') {
-                html += `<span style="color:red;">(</span>`;
+                html += `<span class="power-red">(</span>`;
                 powerDepth = 1;
                 i++;
             }
@@ -200,7 +200,8 @@ function loadFromStorage() {
             } else {
                 if (expression[i] === "(") {
                     powerDepth++;
-                    html += `<span style="color:red;">(</span>`;
+                    html += `<span class="power-red">(</span>`;
+
                 }
                 else if (expression[i] === ")") {
                     powerDepth--;

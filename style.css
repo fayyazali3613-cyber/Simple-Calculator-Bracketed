@@ -10,12 +10,22 @@ body {
     box-sizing: border-box;
 }
 
+.power-red {
+    color: red;
+}
+
+.power-symbol {
+    color: red;
+    font-size: 0.8em;
+    vertical-align: super;
+}
+
 .calculator {
     width: 100%; 
     max-width: 380px;
     background: #1e1e1e;
-    padding: 20px 0 15px 0; /* TOP: 20px, RIGHT: 0, BOTTOM: 15px, LEFT: 0 */
-    border-radius: 10px;
+    padding: 10px 0 10px 0; /* TOP: 20px, RIGHT: 0, BOTTOM: 15px, LEFT: 0 */
+    border-radius: 5px;
     box-shadow: 0 -5px 30px rgba(0,0,0,0.5);
     box-sizing: border-box;
     margin: 0 auto 15px auto; /* TOP: 0, SIDES: auto, BOTTOM: 15px */
@@ -27,7 +37,9 @@ body {
 }
 
 .display {
-    height: 120px;
+    height: 20vh;
+	min-height: 100px; 
+	max-height: 150px;
     background: #ffffff;
     padding: 15px;
     margin: 0 5px 7px 5px; /* SIDE GAPS: 5px */
@@ -40,7 +52,7 @@ body {
 }
 
 .input-line {
-    font-size: 36px;
+    font-size: 40px;
     margin-top: 1px;
     color: #333;
     font-weight: bold;
@@ -57,7 +69,7 @@ body {
 }
 
 .result-line {
-    font-size: 40px;
+    font-size: 50px;
     font-weight: bold;
     color: #555;
     overflow-x: auto;
@@ -79,11 +91,12 @@ body {
 }
 
 button {
-    font-size: 22px; 
+    font-size: 26px; 
     transition: transform 0.1s, opacity 0.1s !important;
     cursor: pointer;
     border: none;
     border-radius: 0px;
+	line-height: 1;
     background: #333;
     color: white;
     transition: 0.2s;
@@ -117,7 +130,7 @@ body.light-mode button {
     background: #ddd;
     color: #333;
     box-shadow: 0 3px 0 #bbb;
-    font-size: 22px;
+    font-size: 26px;
 }
 
 body.light-mode .display {
@@ -225,23 +238,11 @@ body.light-mode .last-ans {
     }
 }
 
-/* Double height buttons for + and = */
-button.calc-btn.equals,
-button.calc-btn.operator.zero {
-    grid-row: span 2 !important;
-    height: calc(60px * 2 + 5px) !important; /* FIXED VALUE */
+.input-line,
+.result-line {
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
 }
 
-@media (max-width: 400px) {
-    button.calc-btn.equals,
-    button.calc-btn.operator.zero {
-        height: calc(55px * 2 + 5px) !important;
-    }
-}
-
-@media (max-width: 320px) {
-    button.calc-btn.equals,
-    button.calc-btn.operator.zero {
-        height: calc(50px * 2 + 5px) !important;
-    }
-}
