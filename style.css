@@ -38,11 +38,11 @@ body {
 
 .display {
     height: 20vh;
-	min-height: 100px; 
+	min-height: 140px; 
 	max-height: 150px;
     background: #ffffff;
-    padding: 15px;
-    margin: 0 5px 7px 5px; /* SIDE GAPS: 5px */
+    padding: 15px 12px;
+    margin: 0px 5px 8px 5px; /* SIDE GAPS: 5px */
     border-radius: 0px;
     display: flex;
     flex-direction: column;
@@ -52,11 +52,11 @@ body {
 }
 
 .input-line {
-    font-size: 40px;
+    font-size: clamp(32px, 6vw, 42px);
     margin-top: 1px;
     color: #333;
     font-weight: bold;
-    height: 50px;
+    min-height: 50px;
     overflow-x: auto;
     white-space: nowrap;
     scrollbar-width: none;
@@ -71,6 +71,7 @@ body {
 .result-line {
     font-size: 50px;
     font-weight: bold;
+	    min-height: 60px;
     color: #555;
     overflow-x: auto;
     white-space: nowrap;
@@ -241,8 +242,7 @@ body.light-mode .last-ans {
 .input-line,
 .result-line {
     line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
+    text-align: right;
 }
+
 
