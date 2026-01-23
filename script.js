@@ -134,6 +134,7 @@ function loadFromStorage() {
     }
 
     // Store current scroll position before rendering
+	const shouldScrollToEnd = cursorPosition >= expression.length;
     const previousScrollLeft = inputDisplay.scrollLeft;
     const wasScrolledToEnd = Math.abs(inputDisplay.scrollLeft - (inputDisplay.scrollWidth - inputDisplay.clientWidth)) < 10;
 
@@ -321,12 +322,12 @@ function loadFromStorage() {
 
     // Restore scroll position intelligently
     setTimeout(() => {
-        if (wasScrolledToEnd || justCalculated) {
-            // If user was at the end or just calculated, scroll to end
-            inputDisplay.scrollLeft = inputDisplay.scrollWidth;
-        } else {
-            // Otherwise, try to maintain the relative scroll position
-            inputDisplay.scrollLeft = previousScrollLeft;
+		if (wasScrolledToEnd || justCalculated || shouldScrollToEnd) {
+			// If user was at the end or just calculated, scroll to end
+			inputDisplay.scrollLeft = inputDisplay.scrollWidth;
+		} else {
+			// Otherwise, try to maintain the relative scroll position
+			inputDisplay.scrollLeft = previousScrollLeft;
             
             // Adjust if cursor is outside visible area
             const selection = window.getSelection();
