@@ -11,10 +11,9 @@
 
 <div class="calculator">   <!-- ✅ BUG-3 FIX -->
     <div class="display">
-
-        <div id="input-line" class="input-line" contenteditable="true"></div>
+        <div id="input-line" class="input-line" contenteditable="true" inputmode="none"></div>
         <div id="result-line" class="result-line">0</div>
-		</div>
+	</div>
 
         <div class="buttons">
             <!-- Row 1 -->
@@ -56,7 +55,7 @@
             <!-- Row 7 -->
             <button class="calc-btn special-btn last-exp" onclick="useLastExpression()">Last Exp</button>
             <button class="calc-btn special-btn last-ans" onclick="useAns()">Last Ans</button>
-
+		<div>
     </div>
 </div>
 

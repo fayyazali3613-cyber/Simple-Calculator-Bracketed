@@ -68,10 +68,9 @@ body {
     -ms-overflow-style: none;
     scroll-behavior: smooth;
     -webkit-touch-callout: none;
-    user-select: text;
-    -webkit-user-select: text;
     cursor: text;
     caret-color: #000;
+
 }
 
 .input-line::-webkit-scrollbar {
