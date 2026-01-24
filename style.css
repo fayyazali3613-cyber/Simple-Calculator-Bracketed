@@ -67,12 +67,11 @@ body {
     scrollbar-width: none;
     -ms-overflow-style: none;
     scroll-behavior: smooth;
-	-webkit-text-size-adjust: none;
-    text-size-adjust: none;
     -webkit-touch-callout: none;
-	 user-select: text;
+    user-select: text;
     -webkit-user-select: text;
     cursor: text;
+    caret-color: #000;
 }
 
 .input-line::-webkit-scrollbar {
@@ -87,12 +86,10 @@ body {
     overflow-x: auto;
     white-space: nowrap;
     scrollbar-width: none;
-
     display: flex;
-    align-items: flex-end;       /* bottom */
-    justify-content: flex-end;   /* right */
- }
-
+    align-items: flex-end;
+    justify-content: flex-end;
+}
 
 .result-line::-webkit-scrollbar {
     display: none;
@@ -105,7 +102,7 @@ body {
     gap: 5px;
     padding: 0 5px;
     margin: 0;
-	-webkit-user-select: none;
+    -webkit-user-select: none;
     user-select: none;
 }
 
@@ -120,7 +117,7 @@ button {
     color: white;
     transition: 0.2s;
     box-shadow: 0 3px 0 #111;
-	-webkit-user-select: none;
+    -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
     touch-action: manipulation;
@@ -224,7 +221,7 @@ body.light-mode .last-ans {
 
     .result-line {
         font-size:  48px;
-		height: 65px;
+        height: 65px;
     }
 
     .buttons {
@@ -245,5 +242,5 @@ body.light-mode .last-ans {
 .result-line {
     line-height: 1;
     text-align: right;
-	    font-family: sans-serif;
+    font-family: sans-serif;
 }
