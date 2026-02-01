@@ -374,51 +374,55 @@ setCursorPosition(visualPos);
 	NEW: LAST EXPRESSION FUNCTION
 	=============================== */
 
-	window.useLastExpression = function () {
-		// Agar same button consecutive press ho raha hai
-		if (lastButtonPressed === "lastExp") {
-			consecutiveButtonPresses++;
-		} else {
-			consecutiveButtonPresses = 1;
-			lastButtonPressed = "lastExp";
-		}
-		
-		// Agar doosri consecutive press hai
-		if (consecutiveButtonPresses >= 2) {
-			showResultMessage("Enter operator");
-			return;
-		}
-		
-		if (lastExpression) {
-			inputDisplay.focus();
-			
-			// Check if we should clear current expression
-			if (justCalculated || expression === "") {
-				expression = lastExpression;
-				cursorPosition = expression.length;
-				justCalculated = false;
-			} else {
-				// Check if last character is a number or closing bracket
-				let lastChar = expression.slice(-1);
-				if (/[0-9)]/.test(lastChar)) {
-					showResultMessage("Enter operator");
-					consecutiveButtonPresses = 2; // Force next press to show message
-					return;
-				}
-				
-				// Append to current expression
-				expression = expression.slice(0, cursorPosition) + lastExpression + expression.slice(cursorPosition);
-				cursorPosition += lastExpression.length;
-			}
-			
-			// Data ko update karo aur save karo
-			saveToStorage();
-			render();
-		} else {
-			// Agar koi last expression nahi hai, to message show karo
-			showResultMessage("No previous expression");
-		}
-	};
+window.useLastExpression = function () {
+    if (lastButtonPressed === "lastExp") {
+        consecutiveButtonPresses++;
+    } else {
+        consecutiveButtonPresses = 1;
+        lastButtonPressed = "lastExp";
+    }
+    
+    if (consecutiveButtonPresses >= 2) {
+        showResultMessage("Enter operator");
+        return;
+    }
+    
+    if (lastExpression) {
+        inputDisplay.focus();
+        
+        // Agar pehle se kuch likha hai aur just calculated nahi hai
+        if (!justCalculated && expression !== "") {
+            let lastChar = expression.slice(-1);
+            
+            // AGAR LAST CHARACTER OPERATOR HAI (+, -, *, /)
+            if (['+', '-', '*', '/'].includes(lastChar)) {
+                // To lastExpression ko brackets mein lapet kar add karo
+                let wrappedExp = "(" + lastExpression + ")";
+                expression = expression.slice(0, cursorPosition) + wrappedExp + expression.slice(cursorPosition);
+                cursorPosition += wrappedExp.length;
+            } 
+            else if (/[0-9)]/.test(lastChar)) {
+                // Agar bina operator ke number ke baad press kiya to multiply ya error
+                showResultMessage("Enter operator");
+                return;
+            }
+            else {
+                expression = expression.slice(0, cursorPosition) + lastExpression + expression.slice(cursorPosition);
+                cursorPosition += lastExpression.length;
+            }
+        } else {
+            // Agar screen khali hai ya abhi equal dabaya tha
+            expression = lastExpression;
+            cursorPosition = expression.length;
+            justCalculated = false;
+        }
+        
+        saveToStorage();
+        render();
+    } else {
+        showResultMessage("No previous expression");
+    }
+};
 
     /* ===============================
        HELPER FUNCTIONS
