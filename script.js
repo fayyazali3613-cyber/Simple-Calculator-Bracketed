@@ -312,6 +312,8 @@ function loadFromStorage() {
     const wasFocused = document.activeElement === inputDisplay;
     
     inputDisplay.innerHTML = html;
+	// render function ke andar:
+inputDisplay.setAttribute("inputmode", "none"); // Ye keyboard block karega magar cursor rakhega
 
     if (wasFocused && html.length > 0) {
         setTimeout(() => {
@@ -1157,12 +1159,7 @@ function formatNumberWithCommas(numStr) {
         console.log("Cursor at position 0, nothing to delete");
     }
 };
-// Mobile keyboard ko block karne ke liye
-inputDisplay.addEventListener("focus", function() {
-    // Agar keyboard phir bhi khule to use foran band kar do
-    if (window.innerWidth < 768) { // Sirf mobile/tablet ke liye
-        inputDisplay.blur(); 
-    }
+
 });
 	window.clearDisplay = function () {
 		// Reset consecutive presses

@@ -56,6 +56,7 @@ body {
     overflow: hidden;
 }
 
+/* style.css mein ise update karein */
 .input-line {
     font-size: 41px;
     margin-top: 10px;
@@ -67,11 +68,13 @@ body {
     scrollbar-width: none;
     -ms-overflow-style: none;
     scroll-behavior: smooth;
-	-webkit-text-size-adjust: none;
+    -webkit-text-size-adjust: none;
     text-size-adjust: none;
-	    user-select: none;
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
+    
+    /* In lines ko update karein */
+    user-select: text !important; 
+    -webkit-user-select: text !important;
+    -webkit-touch-callout: default !important;
 }
 
 .input-line::-webkit-scrollbar {
