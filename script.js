@@ -1153,7 +1153,13 @@ function formatNumberWithCommas(numStr) {
         console.log("Cursor at position 0, nothing to delete");
     }
 };
-
+// Mobile keyboard ko block karne ke liye
+inputDisplay.addEventListener("focus", function() {
+    // Agar keyboard phir bhi khule to use foran band kar do
+    if (window.innerWidth < 768) { // Sirf mobile/tablet ke liye
+        inputDisplay.blur(); 
+    }
+});
 	window.clearDisplay = function () {
 		// Reset consecutive presses
 		consecutiveButtonPresses = 0;
