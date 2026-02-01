@@ -993,103 +993,73 @@ function formatNumberWithCommas(numStr) {
 	/* ===============================
 	   CALCULATE FUNCTION - FIXED FOR SQUARE ROOT WITH COMMA FORMATTING
 		=============================== */
-	window.calculate = function () {
-		if (expression === "") return;
-		if (isPowerMode) exitPower();
-		
-		// Save current expression before calculation
-		lastExpression = expression; // ← YE LINE ADD KARO
+window.calculate = function () {
+    if (expression === "") return;
+    if (isPowerMode) exitPower();
 
-		// Remove commas from expression before calculation
-		let tempExpr = removeCommasFromExpression(expression);
-		tempExpr = normalizeOperators(tempExpr);
+    // Save current expression before calculation
+    lastExpression = expression;
 
+    // Remove commas from expression before calculation
+    let tempExpr = removeCommasFromExpression(expression);
+    tempExpr = normalizeOperators(tempExpr);
 
-		// FIX FOR SQUARE ROOT: Handle nested square roots
-		// First, count all √ characters
-		let sqrtCount = 0;
-		for (let char of tempExpr) {
-			if (char === '√') sqrtCount++;
-		}
-		
-		// Replace each √ with Math.sqrt(
-		for (let s = 0; s < sqrtCount; s++) {
-			tempExpr = tempExpr.replace('√', 'Math.sqrt(');
-		}
-		
-		// Add closing brackets for all Math.sqrt(
-		for (let s = 0; s < sqrtCount; s++) {
-			// Find the position of Math.sqrt(
-			let sqrtPos = tempExpr.indexOf('Math.sqrt(');
-			if (sqrtPos === -1) break;
-			
-			// Find where to put closing bracket
-			let j = sqrtPos + 10; // After "Math.sqrt("
-			let bracketDepth = 0;
-			
-			while (j < tempExpr.length) {
-				if (tempExpr[j] === '(') bracketDepth++;
-				else if (tempExpr[j] === ')') {
-					if (bracketDepth === 0) break;
-					bracketDepth--;
-				}
-				else if (bracketDepth === 0 && /[\+\-\*\/]/.test(tempExpr[j])) {
-					break;
-				}
-				j++;
-			}
-			
-			// Insert closing bracket
-			tempExpr = tempExpr.slice(0, j) + ")" + tempExpr.slice(j);
-		}
+    // Handle square roots
+    let sqrtCount = 0;
+    for (let char of tempExpr) if (char === '√') sqrtCount++;
+    for (let s = 0; s < sqrtCount; s++) tempExpr = tempExpr.replace('√', 'Math.sqrt(');
+    for (let s = 0; s < sqrtCount; s++) {
+        let sqrtPos = tempExpr.indexOf('Math.sqrt(');
+        if (sqrtPos === -1) break;
 
-		// Count brackets - ORIGINAL LOGIC RESTORED
-		let openB  = (tempExpr.match(/\(/g) || []).length;
-		let closeB = (tempExpr.match(/\)/g) || []).length;
-		
-		// Agar brackets missing hain to notification show karo
-		if (openB > closeB) {
-			// Sirf agar √ nahi hai aur brackets missing hain tab error dikhao
-			if (!tempExpr.includes("Math.sqrt(")) {
-				showResultMessage("Close bracket");
-				return;
-			}
-			// √ hai to automatically closing brackets add karo
-			tempExpr += ")".repeat(openB - closeB);
-		}
+        // Find where to close the sqrt
+        let j = sqrtPos + 10;
+        let bracketDepth = 0;
+        while (j < tempExpr.length) {
+            if (tempExpr[j] === '(') bracketDepth++;
+            else if (tempExpr[j] === ')') {
+                if (bracketDepth === 0) break;
+                bracketDepth--;
+            } else if (bracketDepth === 0 && /[\+\-\*\/]/.test(tempExpr[j])) {
+                break;
+            }
+            j++;
+        }
+        tempExpr = tempExpr.slice(0, j) + ")" + tempExpr.slice(j);
+    }
 
-		// Remove trailing operators
-		while (['+', '-', '*', '/'].includes(tempExpr.slice(-1))) {
-			tempExpr = tempExpr.slice(0, -1);
-		}
+    // Check bracket balance
+    let openB = (tempExpr.match(/\(/g) || []).length;
+    let closeB = (tempExpr.match(/\)/g) || []).length;
+    if (openB > closeB) {
+        showResultMessage("Close bracket");
+        return;
+    }
 
-		try {
-			let result = eval(tempExpr);
-			if (!Number.isInteger(result)) {
-				result = Math.round(result * 100000000) / 100000000;
-			}
+    try {
+        let result = eval(tempExpr); // ⚠️ eval is safe here since input is controlled
+        if (result === undefined || result === null || isNaN(result)) {
+            showResultMessage("Error");
+            return;
+        }
 
-			// Format result with commas
-			let resultStr = result.toString();
-			let formattedResult = formatNumberWithCommas(resultStr);
-			
-			resultDisplay.innerText = formattedResult;
-			lastAnswer = resultStr; // Store without commas for future calculations
-			justCalculated = true;
-			
-			cursorPosition = expression.length;
-			isPowerMode = false;
-			powerStartIndex = -1;
-			saveToStorage();
-			render();
+        // Format result with commas
+        lastAnswer = result.toString();
+        resultDisplay.innerText = formatNumberWithCommas(lastAnswer);
+        justCalculated = true;
+        saveToStorage();
 
-		} catch (error) {
-			console.error("Calculation error:", error);
-			resultDisplay.innerText = "Error";
-			resultDisplay.style.opacity = "1";
-			justCalculated = false;
-		}
-	};
+        // Update input display with calculated value
+        expression = lastAnswer;
+        cursorPosition = expression.length;
+        render();
+
+    } catch (err) {
+        console.error(err);
+        showResultMessage("Error");
+    }
+};
+
 	
     /* ===============================
        CLEAR & BACKSPACE
